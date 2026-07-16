@@ -95,10 +95,16 @@ fun DogVisionApp() {
                 val randomBark = barks.random()
                 try {
                     val mediaPlayer = MediaPlayer.create(context, randomBark)
-                    mediaPlayer?.setOnCompletionListener { mp ->
-                        mp.release()
+                    mediaPlayer?.let { mp ->
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            val pitch = (0.85f + Math.random() * 0.5f).toFloat()
+                            mp.playbackParams = mp.playbackParams.setPitch(pitch)
+                        }
+                        mp.setOnCompletionListener { activeMp ->
+                            activeMp.release()
+                        }
+                        mp.start()
                     }
-                    mediaPlayer?.start()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
