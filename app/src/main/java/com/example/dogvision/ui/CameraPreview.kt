@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -29,52 +30,69 @@ import com.example.dogvision.DogVisionShader
 import com.example.dogvision.R
 
 @Composable
-fun MergingConesLoader(modifier: Modifier = Modifier) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loader")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1500, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+fun CameraFocusLoader(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "focus_loader")
     
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
+    val bracketOffset by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 16f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 750, easing = EaseInOutSine),
+            animation = tween(durationMillis = 1000, easing = EaseInOutQuad),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "scale"
+        label = "bracket_offset"
+    )
+    
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow_alpha"
     )
 
-    Canvas(modifier = modifier.size(80.dp).graphicsLayer(rotationZ = angle, scaleX = scale, scaleY = scale)) {
-        val center = Offset(size.width / 2, size.height / 2)
-        val radius = size.width * 0.3f
+    Canvas(modifier = modifier.size(100.dp)) {
+        val width = size.width
+        val height = size.height
+        val center = Offset(width / 2, height / 2)
         
-        val angleRad1 = 0.0
-        val angleRad2 = 2 * Math.PI / 3
-        val angleRad3 = 4 * Math.PI / 3
-
-        val dot1 = Offset(
-            center.x + radius * kotlin.math.cos(angleRad1).toFloat(),
-            center.y + radius * kotlin.math.sin(angleRad1).toFloat()
+        val o = bracketOffset
+        val len = 20f
+        val stroke = 4f
+        val color = Color(0xFFFFD700).copy(alpha = glowAlpha) // Theme yellow
+        
+        // Top-left bracket
+        drawLine(color, Offset(o, o), Offset(o + len, o), strokeWidth = stroke)
+        drawLine(color, Offset(o, o), Offset(o, o + len), strokeWidth = stroke)
+        
+        // Top-right bracket
+        drawLine(color, Offset(width - o, o), Offset(width - o - len, o), strokeWidth = stroke)
+        drawLine(color, Offset(width - o, o), Offset(width - o, o + len), strokeWidth = stroke)
+        
+        // Bottom-left bracket
+        drawLine(color, Offset(o, height - o), Offset(o + len, height - o), strokeWidth = stroke)
+        drawLine(color, Offset(o, height - o), Offset(o, height - o - len), strokeWidth = stroke)
+        
+        // Bottom-right bracket
+        drawLine(color, Offset(width - o, height - o), Offset(width - o - len, height - o), strokeWidth = stroke)
+        drawLine(color, Offset(width - o, height - o), Offset(width - o, height - o - len), strokeWidth = stroke)
+        
+        // Central dot (dog's blue vision receptor representation)
+        drawCircle(
+            color = Color(0xFF00BCD4).copy(alpha = glowAlpha),
+            radius = 6f,
+            center = center
         )
-        val dot2 = Offset(
-            center.x + radius * kotlin.math.cos(angleRad2).toFloat(),
-            center.y + radius * kotlin.math.sin(angleRad2).toFloat()
+        
+        // Target circle
+        drawCircle(
+            color = Color.White.copy(alpha = 0.15f),
+            radius = width / 4,
+            center = center,
+            style = Stroke(width = 2f)
         )
-        val dot3 = Offset(
-            center.x + radius * kotlin.math.cos(angleRad3).toFloat(),
-            center.y + radius * kotlin.math.sin(angleRad3).toFloat()
-        )
-
-        drawCircle(Color(0xFFF44336), radius = 10f, center = dot1) // Red
-        drawCircle(Color(0xFF4CAF50), radius = 10f, center = dot2) // Green
-        drawCircle(Color(0xFF3F51B5), radius = 10f, center = dot3) // Blue
     }
 }
 
@@ -156,7 +174,7 @@ fun CameraPreview(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    MergingConesLoader()
+                    CameraFocusLoader()
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(R.string.calibrating_vision),
