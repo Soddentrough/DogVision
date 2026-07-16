@@ -39,9 +39,18 @@ import com.example.dogvision.ui.CameraPreview
 import com.example.dogvision.ui.EyeDiagram
 import com.example.dogvision.ui.WavelengthComparison
 
+import android.content.pm.ActivityInfo
+import android.os.Build
+
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Enable Wide Color Gamut (Display P3) mode to receive wide-range, rich-gamut sensor data
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+        }
+        
         enableEdgeToEdge()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme()) { // Force Dark Theme
