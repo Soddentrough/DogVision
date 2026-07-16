@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 fun DogVisionApp() {
-    var showCamera by remember { mutableStateOf(false) }
+    var showCamera by rememberSaveable { mutableStateOf(false) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -90,8 +91,8 @@ fun DogVisionApp() {
         modifier = Modifier.fillMaxSize()
     ) { isCameraActive ->
         if (isCameraActive) {
-            var isColorFilterEnabled by remember { mutableStateOf(true) }
-            var isBlurEnabled by remember { mutableStateOf(true) }
+            var isColorFilterEnabled by rememberSaveable { mutableStateOf(true) }
+            var isBlurEnabled by rememberSaveable { mutableStateOf(true) }
 
             val playBark = {
                 val barks = listOf(R.raw.dog_bark_1, R.raw.dog_bark_2, R.raw.dog_bark_3)
