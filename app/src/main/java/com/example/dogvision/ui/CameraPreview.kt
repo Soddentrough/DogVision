@@ -133,7 +133,24 @@ fun CameraPreview(
                         // This best approximates a dog's ~240 degree panoramic vision.
                         val cameraSelector = selectBestCamera(cameraProvider.availableCameraInfos)
                         
-                        val preview = Preview.Builder().build().also {
+                        // Query if the selected camera supports 10-bit HDR (HLG) wide color gamut input
+                        val matchingInfos = cameraSelector.filter(cameraProvider.availableCameraInfos)
+                        val selectedCameraInfo = matchingInfos.firstOrNull()
+                        val hlgSupported = if (selectedCameraInfo != null) {
+                            val candidates = setOf(
+                                androidx.camera.core.DynamicRange.SDR,
+                                androidx.camera.core.DynamicRange.HLG_10_BIT
+                            )
+                            selectedCameraInfo.querySupportedDynamicRanges(candidates)
+                                .contains(androidx.camera.core.DynamicRange.HLG_10_BIT)
+                        } else false
+
+                        val previewBuilder = Preview.Builder()
+                        if (hlgSupported) {
+                            previewBuilder.setDynamicRange(androidx.camera.core.DynamicRange.HLG_10_BIT)
+                        }
+                        
+                        val preview = previewBuilder.build().also {
                             it.setSurfaceProvider(surfaceProvider)
                         }
                         try {
