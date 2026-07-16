@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -118,12 +119,12 @@ fun DogVisionApp() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     EmulationToggleButton(
-                        label = "Lens",
+                        label = stringResource(R.string.lens),
                         isActive = isBlurEnabled,
                         onClick = { isBlurEnabled = !isBlurEnabled }
                     )
                     EmulationToggleButton(
-                        label = "Receptors",
+                        label = stringResource(R.string.receptors),
                         isActive = isColorFilterEnabled,
                         onClick = { isColorFilterEnabled = !isColorFilterEnabled }
                     )
@@ -131,7 +132,7 @@ fun DogVisionApp() {
 
                 // Small subtle exit text
                 Text(
-                    "Tap background to return",
+                    text = stringResource(R.string.tap_background_to_return),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 36.dp),
@@ -208,12 +209,12 @@ fun InfoView(onStartClicked: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                "DogVision",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black),
                 color = Color.White
             )
             Text(
-                "Experience the world in Blue & Yellow",
+                text = stringResource(R.string.subtitle),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.Gray
             )
@@ -237,7 +238,7 @@ fun InfoView(onStartClicked: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Sensitivity",
+                    text = stringResource(R.string.tab_sensitivity),
                     color = if (selectedTab == 0) Color.Black else Color.Gray,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -253,7 +254,7 @@ fun InfoView(onStartClicked: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Anatomy",
+                    text = stringResource(R.string.tab_anatomy),
                     color = if (selectedTab == 1) Color.Black else Color.Gray,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium
@@ -290,7 +291,7 @@ fun InfoView(onStartClicked: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
         ) {
             Text(
-                "START EMULATION",
+                text = stringResource(R.string.start_emulation),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black

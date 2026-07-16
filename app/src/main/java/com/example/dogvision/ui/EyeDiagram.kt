@@ -10,24 +10,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.dogvision.R
 
 @Composable
 fun EyeDiagram(modifier: Modifier = Modifier) {
     Column(modifier = modifier.padding(16.dp)) {
-        Text("Eye Anatomy Comparison", style = MaterialTheme.typography.titleMedium)
+        Text(text = stringResource(R.string.eye_anatomy_comparison), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(16.dp))
         
         Row(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Human", style = MaterialTheme.typography.labelMedium)
+                Text(text = stringResource(R.string.human), style = MaterialTheme.typography.labelMedium)
                 EyeDrawing(isDog = false, modifier = Modifier.size(120.dp))
-                Text("Fovea (High Detail)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text(text = stringResource(R.string.fovea_detail), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             }
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Dog", style = MaterialTheme.typography.labelMedium)
+                Text(text = stringResource(R.string.dog), style = MaterialTheme.typography.labelMedium)
                 EyeDrawing(isDog = true, modifier = Modifier.size(120.dp))
-                Text("Tapetum (Night Vision)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text(text = stringResource(R.string.tapetum_night_vision), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             }
         }
     }

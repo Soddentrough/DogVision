@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.dogvision.R
 import kotlin.math.exp
 import kotlin.math.pow
 
@@ -33,7 +35,7 @@ fun WavelengthComparison(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Human (Trichromat)",
+                text = stringResource(R.string.human_trichromat),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
@@ -62,7 +64,7 @@ fun WavelengthComparison(modifier: Modifier = Modifier) {
                     )
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Visible Spectrum (RGB)", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(text = stringResource(R.string.visible_spectrum_rgb), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
 
         // Dog Column
@@ -71,7 +73,7 @@ fun WavelengthComparison(modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Dog (Dichromat)",
+                text = stringResource(R.string.dog_dichromat),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
@@ -99,7 +101,7 @@ fun WavelengthComparison(modifier: Modifier = Modifier) {
                     )
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Visible Spectrum (B/Y)", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(text = stringResource(R.string.visible_spectrum_by), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
     }
 }
