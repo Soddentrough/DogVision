@@ -9,11 +9,11 @@ object DogVisionShader {
         uniform shader inputBuffer;
         
         float3 srgbToLinear(float3 srgb) {
-            return mix(srgb / 12.92, pow((srgb + 0.055) / 1.055, float3(2.4)), step(0.04045, srgb));
+            return pow(srgb, float3(2.2));
         }
 
         float3 linearToSrgb(float3 lin) {
-            return mix(lin * 12.92, 1.055 * pow(lin, float3(1.0 / 2.4)) - 0.055, step(0.0031308, lin));
+            return pow(lin, float3(1.0 / 2.2));
         }
 
         half4 main(float2 fragCoord) {
