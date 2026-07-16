@@ -4,7 +4,7 @@
     <string name="tab_sensitivity">Sensitivity</string>
     <string name="tab_anatomy">Anatomy</string>
     <string name="start_emulation">START EMULATION</string>
-    <string name="tap_background_to_return">Tap background to return</string>
+    <string name="button_return">Return</string>
     <string name="visible_spectrum_rgb">Visible Spectrum (RGB)</string>
     <string name="visible_spectrum_by">Visible Spectrum (B/Y)</string>
     <string name="human_trichromat">Human (Trichromat)</string>

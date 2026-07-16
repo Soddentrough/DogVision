@@ -4,7 +4,7 @@
     <string name="tab_sensitivity">感度</string>
     <string name="tab_anatomy">解剖学</string>
     <string name="start_emulation">エミュレーション開始</string>
-    <string name="tap_background_to_return">画面タップで戻る</string>
+    <string name="button_return">戻る</string>
     <string name="visible_spectrum_rgb">可視スペクトル (RGB)</string>
     <string name="visible_spectrum_by">可視スペクトル (青/黄)</string>
     <string name="human_trichromat">人間 (三色型色覚)</string>

@@ -2,6 +2,7 @@ package com.example.dogvision
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -89,14 +90,28 @@ fun DogVisionApp() {
             var isColorFilterEnabled by remember { mutableStateOf(true) }
             var isBlurEnabled by remember { mutableStateOf(true) }
 
+            val playBark = {
+                val barks = listOf(R.raw.dog_bark_1, R.raw.dog_bark_2, R.raw.dog_bark_3)
+                val randomBark = barks.random()
+                try {
+                    val mediaPlayer = MediaPlayer.create(context, randomBark)
+                    mediaPlayer?.setOnCompletionListener { mp ->
+                        mp.release()
+                    }
+                    mediaPlayer?.start()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Clicking the background closes the camera preview
+                // Clicking the background plays a random dog bark sound
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { showCamera = false }
+                        .clickable { playBark() }
                 ) {
                     CameraPreview(
                         isColorFilterEnabled = isColorFilterEnabled,
@@ -105,40 +120,53 @@ fun DogVisionApp() {
                     )
                 }
                 
-                // Subtle transparent floating buttons at the bottom center
-                Row(
+                // Subtle transparent floating controls column at the bottom center
+                Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
+                        .padding(bottom = 40.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = {} // Consume click
+                            onClick = {} // Intercept and consume clicks to avoid triggering barks
                         ),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    EmulationToggleButton(
-                        label = stringResource(R.string.lens),
-                        isActive = isBlurEnabled,
-                        onClick = { isBlurEnabled = !isBlurEnabled }
-                    )
-                    EmulationToggleButton(
-                        label = stringResource(R.string.receptors),
-                        isActive = isColorFilterEnabled,
-                        onClick = { isColorFilterEnabled = !isColorFilterEnabled }
-                    )
-                }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        EmulationToggleButton(
+                            label = stringResource(R.string.lens),
+                            isActive = isBlurEnabled,
+                            onClick = { isBlurEnabled = !isBlurEnabled }
+                        )
+                        EmulationToggleButton(
+                            label = stringResource(R.string.receptors),
+                            isActive = isColorFilterEnabled,
+                            onClick = { isColorFilterEnabled = !isColorFilterEnabled }
+                        )
+                    }
 
-                // Small subtle exit text
-                Text(
-                    text = stringResource(R.string.tap_background_to_return),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 36.dp),
-                    color = Color.White.copy(alpha = 0.5f),
-                    style = MaterialTheme.typography.labelSmall
-                )
+                    // Return Button
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.15f))
+                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+                            .clickable { showCamera = false }
+                            .padding(horizontal = 32.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.button_return).uppercase(),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         } else {
             InfoView(onStartClicked = { startAction() })
