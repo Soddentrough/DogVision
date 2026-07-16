@@ -4,7 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,12 +32,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import com.example.dogvision.ui.CameraPreview
 import com.example.dogvision.ui.EyeDiagram
 import com.example.dogvision.ui.WavelengthComparison
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -209,8 +212,6 @@ fun EmulationToggleButton(label: String, isActive: Boolean, onClick: () -> Unit)
 
 @Composable
 fun InfoView(onStartClicked: () -> Unit) {
-    var selectedTab by remember { mutableStateOf(0) }
-    
     val infiniteTransition = rememberInfiniteTransition(label = "dog_float")
     val offsetY by infiniteTransition.animateFloat(
         initialValue = -6f,
@@ -231,6 +232,11 @@ fun InfoView(onStartClicked: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Language Toggle at Top Right
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
+            LanguageToggle()
+        }
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(modifier = Modifier.height(8.dp))
             Image(
@@ -250,53 +256,20 @@ fun InfoView(onStartClicked: () -> Unit) {
             Text(
                 text = stringResource(R.string.subtitle),
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = Color(0xFFFFD700), // Highlight in yellow
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
 
-        // Custom Capsule Selector
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1E1E1E), RoundedCornerShape(16.dp))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (selectedTab == 0) Color(0xFFFFD700) else Color.Transparent)
-                    .clickable { selectedTab = 0 }
-                    .padding(vertical = 10.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.tab_sensitivity),
-                    color = if (selectedTab == 0) Color.Black else Color.Gray,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (selectedTab == 1) Color(0xFFFFD700) else Color.Transparent)
-                    .clickable { selectedTab = 1 }
-                    .padding(vertical = 10.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.tab_anatomy),
-                    color = if (selectedTab == 1) Color.Black else Color.Gray,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
-
-        // Content Area based on Selected Tab
+        // Content Area - Combined comparison
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -304,16 +277,7 @@ fun InfoView(onStartClicked: () -> Unit) {
                 .padding(vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Crossfade(targetState = selectedTab, label = "TabContentTransition") { tab ->
-                when (tab) {
-                    0 -> {
-                        WavelengthComparison(modifier = Modifier.fillMaxWidth())
-                    }
-                    1 -> {
-                        EyeDiagram(modifier = Modifier.fillMaxWidth())
-                    }
-                }
-            }
+            WavelengthComparison(modifier = Modifier.fillMaxWidth())
         }
 
         Button(
@@ -334,3 +298,53 @@ fun InfoView(onStartClicked: () -> Unit) {
     }
 }
 
+
+@Composable
+fun LanguageToggle() {
+    val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+    val isJp = currentLocale.contains("ja")
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF1E1E1E))
+            .padding(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        LanguageButton(
+            text = stringResource(R.string.lang_en),
+            isSelected = !isJp,
+            onClick = {
+                val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("en")
+                AppCompatDelegate.setApplicationLocales(appLocale)
+            }
+        )
+        LanguageButton(
+            text = stringResource(R.string.lang_jp),
+            isSelected = isJp,
+            onClick = {
+                val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("ja")
+                AppCompatDelegate.setApplicationLocales(appLocale)
+            }
+        )
+    }
+}
+
+@Composable
+fun LanguageButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (isSelected) Color(0xFFFFD700) else Color.Transparent)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) Color.Black else Color.Gray,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+}

@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">DogVision</string>
-    <string name="subtitle">Experience the world in Blue &amp; Yellow</string>
+    <string name="subtitle">See the world through your dog\'s eyes</string>
+    <string name="description">Turns raw camera sensor data into an anatomically and physically accurate simulation of a dog\'s lens and photoreceptors</string>
     <string name="tab_sensitivity">Sensitivity</string>
     <string name="tab_anatomy">Anatomy</string>
     <string name="start_emulation">START EMULATION</string>
@@ -17,4 +18,6 @@
     <string name="dog">Dog</string>
     <string name="fovea_detail">Fovea (High Detail)</string>
     <string name="tapetum_night_vision">Tapetum (Night Vision)</string>
+    <string name="lang_en">EN</string>
+    <string name="lang_jp">JP</string>
 </resources>

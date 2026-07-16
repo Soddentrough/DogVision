@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">DogVision</string>
-    <string name="subtitle">青と黄色の世界を体験しよう</string>
+    <string name="subtitle">愛犬が見ている世界をのぞいてみよう</string>
+    <string name="description">カメラのセンサーデータを、犬のレンズと光受容体の解剖学的・物理的に正確なシミュレーションに変換します</string>
     <string name="tab_sensitivity">感度</string>
     <string name="tab_anatomy">解剖学</string>
     <string name="start_emulation">エミュレーション開始</string>
@@ -17,4 +18,6 @@
     <string name="dog">犬</string>
     <string name="fovea_detail">中心窩 (高精細)</string>
     <string name="tapetum_night_vision">タペタム (夜間視力)</string>
+    <string name="lang_en">EN</string>
+    <string name="lang_jp">JP</string>
 </resources>

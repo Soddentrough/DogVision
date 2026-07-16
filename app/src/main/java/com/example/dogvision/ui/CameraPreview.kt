@@ -3,6 +3,10 @@ package com.example.dogvision.ui
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
+import android.hardware.camera2.CameraCharacteristics
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
+import androidx.camera.core.CameraInfo
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -96,6 +100,7 @@ fun CameraFocusLoader(modifier: Modifier = Modifier) {
     }
 }
 
+@androidx.camera.camera2.interop.ExperimentalCamera2Interop
 @Composable
 fun CameraPreview(
     isColorFilterEnabled: Boolean,
@@ -123,17 +128,35 @@ fun CameraPreview(
                     // Setup and bind camera provider listener once during creation
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
+                        
+                        // Strategy: Find the lens with the widest Field of View (shortest focal length)
+                        // This best approximates a dog's ~240 degree panoramic vision.
+                        val cameraSelector = selectBestCamera(cameraProvider.availableCameraInfos)
+                        
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(surfaceProvider)
                         }
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                         try {
                             cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
+                            val camera = cameraProvider.bindToLifecycle(
                                 lifecycleOwner,
                                 cameraSelector,
                                 preview
                             )
+                            
+                            // Observe zoom state to retrieve the minimum zoom ratio (e.g., 0.5x)
+                            // and force the logical camera to switch to the physical ultra-wide lens
+                            val zoomStateLiveData = camera.cameraInfo.zoomState
+                            zoomStateLiveData.observe(lifecycleOwner, object : androidx.lifecycle.Observer<androidx.camera.core.ZoomState> {
+                                override fun onChanged(value: androidx.camera.core.ZoomState) {
+                                    val minZoom = value.minZoomRatio
+                                    if (minZoom < 1.0f) {
+                                        camera.cameraControl.setZoomRatio(minZoom)
+                                    }
+                                    zoomStateLiveData.removeObserver(this)
+                                }
+                            })
+                            
                             isCameraReady = true
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -185,4 +208,43 @@ fun CameraPreview(
             }
         }
     }
+}
+
+@androidx.camera.camera2.interop.ExperimentalCamera2Interop
+private fun selectBestCamera(cameraInfos: List<androidx.camera.core.CameraInfo>): CameraSelector {
+    // Look for back-facing cameras
+    val backCameras = cameraInfos.filter { 
+        it.lensFacing == CameraSelector.LENS_FACING_BACK 
+    }
+    
+    if (backCameras.isEmpty()) return CameraSelector.DEFAULT_BACK_CAMERA
+
+    // Strategy: We want the absolute widest field of view.
+    // Modern devices often have a "Logical" camera (0) and multiple physical cameras (0, 1, 2...).
+    // CameraX usually presents these as separate CameraInfos.
+    
+    val bestInfo = backCameras.minByOrNull { info ->
+        val camera2Info = Camera2CameraInfo.from(info)
+        val focalLengths = camera2Info.getCameraCharacteristic(
+            CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS
+        )
+        val sensorSize = camera2Info.getCameraCharacteristic(
+            CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE
+        )
+        
+        // FOV = 2 * atan(sensorSize / (2 * focalLength))
+        // Shorter focal length always means wider FOV for the same sensor size.
+        // However, ultra-wide sensors are often smaller.
+        // Let's use a "Horizontal FOV" approximation: sensorWidth / focalLength
+        val hFovFactor = if (focalLengths != null && sensorSize != null && focalLengths.isNotEmpty()) {
+            sensorSize.width / focalLengths[0]
+        } else 0f
+        
+        android.util.Log.d("DogVisionCamera", "Camera: ${info.cameraSelector}, Focal: ${focalLengths?.firstOrNull()}, SensorW: ${sensorSize?.width}, FovFactor: $hFovFactor")
+        
+        // We want to MAXIMIZE hFovFactor, so we MINIMIZE negative hFovFactor
+        -hFovFactor
+    }
+
+    return bestInfo?.cameraSelector ?: CameraSelector.DEFAULT_BACK_CAMERA
 }
