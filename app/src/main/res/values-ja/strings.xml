@@ -1,23 +1,88 @@
 <resources>
-    <string name="app_name">DogVision</string>
-    <string name="subtitle">愛犬が見ている世界をのぞいてみよう</string>
-    <string name="description">カメラのセンサーデータを、犬のレンズと光受容体の解剖学的・物理的に正確なシミュレーションに変換します</string>
-    <string name="tab_sensitivity">感度</string>
-    <string name="tab_anatomy">解剖学</string>
+    <string name="app_name">AnimalVision</string>
+    <string name="subtitle">動物たちが見ている世界をのぞいてみよう</string>
+    <string name="description">カメラのセンサーデータを、動物の光受容体・レンズ・網膜構造の解剖学的・物理的に正確な分光シミュレーションに変換します。</string>
     <string name="start_emulation">エミュレーション開始</string>
     <string name="button_return">戻る</string>
-    <string name="visible_spectrum_rgb">可視スペクトル (RGB)</string>
+    <string name="visible_spectrum_rgb">可視スペクトル (人間の3色型色覚)</string>
+    <string name="visible_spectrum_animal">動物の知覚スペクトル</string>
     <string name="visible_spectrum_by">可視スペクトル (青/黄)</string>
-    <string name="human_trichromat">人間 (三色型色覚)</string>
-    <string name="dog_dichromat">犬 (二色型色覚)</string>
-    <string name="lens">レンズ</string>
+    <string name="human_trichromat">人間 (3色型色覚)</string>
+    <string name="dog_dichromat">犬 (2色型色覚)</string>
+    <string name="deer_dichromat">鹿 (2色型色覚 + UV透過)</string>
+    <string name="cat_dichromat">猫 (2色型色覚 + 暗所視)</string>
+    <string name="bird_tetrachromat">鳥類/猛禽 (4色型色覚 + UV)</string>
+    <string name="bee_trichromat">ミツバチ (UV-青-緑 + 複眼)</string>
+    <string name="snake_thermal">マムシ/ヘビ (2色型 + 熱赤外線)</string>
+
+    <string name="lens">光学レンズ</string>
     <string name="receptors">受容体</string>
-    <string name="calibrating_vision">視覚キャリブレーション中...</string>
-    <string name="eye_anatomy_comparison">眼の解剖学的比較</string>
+    <string name="split_mode">分割比較</string>
+    <string name="human_label">人間</string>
+    <string name="dog_label">犬</string>
+    <string name="calibrating_vision">分光センサーキャリブレーション中&#8230;</string>
+    <string name="eye_anatomy_comparison">眼の解剖学的・網膜構造の比較</string>
     <string name="human">人間</string>
-    <string name="dog">犬</string>
-    <string name="fovea_detail">中心窩 (高精細)</string>
-    <string name="tapetum_night_vision">タペタム (夜間視力)</string>
+    <string name="fovea_detail">中心窩 (超高精細)</string>
+    <string name="tapetum_night_vision">タペタム (夜間反射板)</string>
     <string name="lang_en">EN</string>
     <string name="lang_jp">JP</string>
+
+    <!-- Spec Badges -->
+    <string name="spec_acuity">視力 (解像度)</string>
+    <string name="spec_fov">視野角</string>
+    <string name="spec_tapetum">夜間感度倍率</string>
+    <string name="spec_uv">UV (紫外線) 知覚</string>
+    <string name="spec_pupil">瞳孔形状</string>
+
+    <!-- Animals -->
+    <!-- Dog -->
+    <string name="animal_dog_name">犬 (イヌ)</string>
+    <string name="animal_dog_subtitle">動体視力に優れた青・黄の2色型ハンター</string>
+    <string name="animal_dog_desc">犬はS錐体(435nm)とM/L錐体(555nm)の2種類の錐体を持ちます。世界を青と黄色の階調で知覚し、赤緑色盲(第2色覚異常)に相当します。網膜背面のタペタムにより薄暗い光を4〜5倍に増幅します。</string>
+    <string name="dog_fact_1">赤緑色盲: 赤と緑がくすんだ黄褐色に見える</string>
+    <string name="dog_fact_2">視力約0.2〜0.3 (20/75): 人間の約3分の1の解像度</string>
+    <string name="dog_fact_3">タペタム反射層: 薄暗い場所で光を4〜5倍に増幅</string>
+
+    <!-- Deer -->
+    <string name="animal_deer_name">鹿 (シカ)</string>
+    <string name="animal_deer_subtitle">紫外線を見通す薄明薄暮性の草食動物</string>
+    <string name="animal_deer_desc">鹿は455nm(S錐体)と537nm(M錐体)の2色型色覚を持ちます。水晶体にUVフィルターがないため青や紫外線を人間の約20倍強く感知します。赤を感じるL錐体がないため、狩猟用オレンジ服(ブレイズオレンジ)は背景に溶け込む茶褐色・グレーに見えます。</string>
+    <string name="deer_fact_1">視力約0.3 (20/60) &amp; 水平視条: 地平線方向を最も鮮明に捉える</string>
+    <string name="deer_fact_2">UVフィルターなし: ジーンズの青や蛍光増白剤が20倍鮮やかに発光</string>
+    <string name="deer_fact_3">オレンジの迷彩化: 537nmの急峻なカットオフによりオレンジが茶褐色に見える</string>
+    <string name="deer_fact_4">朝夕18倍の夜間視力: 水平タペタムが薄明かりを最大化</string>
+    <string name="deer_fact_5">300°の広角パノラマ視野: 水平スリット瞳孔が頭を下げても水平を保つ(50°回旋)</string>
+
+    <!-- Cat -->
+    <string name="animal_cat_name">猫 (ネコ)</string>
+    <string name="animal_cat_subtitle">夜間待ち伏せ型の捕食者</string>
+    <string name="animal_cat_desc">猫は桿体と錐体の比率が25:1と非常に桿体が多く、夜間や動体検知に特化しています。縦長スリット瞳孔と強力なタペタムにより夜間感度は人間の6〜8倍に達します。昼間の色は淡いパステル調に見えます。</string>
+    <string name="cat_fact_1">桿体比率25:1: 高い動体視力と淡いパステル調の色覚</string>
+    <string name="cat_fact_2">縦型スリット瞳孔: 明暗の急激な変化に即座に適応</string>
+    <string name="cat_fact_3">6〜8倍の暗所視力: 強力なタペタムによる夜間増幅</string>
+
+    <!-- Bird -->
+    <string name="animal_bird_name">鷹 / 鳥類</string>
+    <string name="animal_bird_subtitle">油滴フィルターを備えた超高精細4色型色覚</string>
+    <string name="animal_bird_desc">鳥類は4種類の錐体(UV/紫380nm, 青450nm, 緑535nm, 赤570nm)とカロテノイド油滴フィルターを持ちます。油滴が余分な波長をカットするため極めて鮮烈な色弁別能を持ち、羽のUV模様や尿の跡を見分けられます。視力は人間の4倍(20/5)に達します。</string>
+    <string name="bird_fact_1">4色型色覚: 紫外線(UV)の反射パターンまで知覚</string>
+    <string name="bird_fact_2">カロテノイド油滴: 光を鋭くフィルタリングし超高彩度な色弁別を実現</string>
+    <string name="bird_fact_3">視力約4.0 (20/5): 2つの中心窩を持つ驚異的な超解像度</string>
+
+    <!-- Bee -->
+    <string name="animal_bee_name">ミツバチ</string>
+    <string name="animal_bee_subtitle">UV-青-緑の3色型色覚と複眼</string>
+    <string name="animal_bee_desc">ミツバチは紫外線(345nm)、青(440nm)、緑(540nm)の受容体を持ち、赤(580nm以上)には全く反応せず黒に見えます。約5000個の六角形個眼からなる複眼で世界を捉え、花の蜜標(ネクターガイド)がUV発光として浮かび上がります。</string>
+    <string name="bee_fact_1">赤色盲: 580nm以上の赤い花や物体は真っ暗(黒)に見える</string>
+    <string name="bee_fact_2">蜜標(ネクターガイド): 花びらに隠されたUV模様が蜜の場所を示す</string>
+    <string name="bee_fact_3">六角形複眼モザイク: 個眼による独特の格子状サンプリング</string>
+
+    <!-- Snake -->
+    <string name="animal_snake_name">マムシ / ピットバイパー</string>
+    <string name="animal_snake_subtitle">可視光2色覚とピット器官による熱赤外線融合</string>
+    <string name="animal_snake_desc">ピットバイパーは可視光の2色型色覚に加え、顔面にあるピット器官で長波長熱赤外線(8〜12µm)を感知します。脳の視蓋で可視光の輪郭と獲物の体温ヒートマップがリアルタイムに重ね合わされます。</string>
+    <string name="snake_fact_1">ピット器官 (赤外線受容体): 8〜12µmの微小な熱放射を感知</string>
+    <string name="snake_fact_2">視蓋での神経融合: 可視光画像と獲物の体温ヒートマップを統合</string>
+    <string name="snake_fact_3">2色型色覚: 夜間の動体検知に特化</string>
 </resources>

@@ -1,26 +1,27 @@
 package com.example.dogvision
 
 import android.Manifest
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.media.MediaPlayer
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.os.LocaleListCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,48 +29,65 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
+import com.example.dogvision.model.AnimalRegistry
+import com.example.dogvision.model.AnimalVisionProfile
+import com.example.dogvision.ui.AnimalSelector
 import com.example.dogvision.ui.CameraPreview
-import com.example.dogvision.ui.EyeDiagram
 import com.example.dogvision.ui.WavelengthComparison
 
-import android.content.pm.ActivityInfo
-import android.os.Build
-
+@ExperimentalCamera2Interop
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Enable Wide Color Gamut (Display P3) mode to receive wide-range, rich-gamut sensor data
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
-        }
-        
+        window.colorMode = ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT
+
+        // Pre-initialize SoundManager with SoundPool for zero-latency audio playback
+        SoundManager.getInstance(applicationContext)
+
         enableEdgeToEdge()
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) { // Force Dark Theme
+            MaterialTheme(colorScheme = darkColorScheme()) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color.Black // Pure black background
+                    color = Color.Black
                 ) {
-                    DogVisionApp()
+                    AnimalVisionApp()
                 }
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        SoundManager.getInstance(applicationContext).release()
+    }
 }
 
+@ExperimentalCamera2Interop
 @Composable
-fun DogVisionApp() {
+fun AnimalVisionApp() {
     var showCamera by rememberSaveable { mutableStateOf(false) }
+    var selectedAnimalId by rememberSaveable { mutableStateOf(AnimalRegistry.DOG.id) }
     var hasCameraPermission by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+
+    val selectedAnimal = remember(selectedAnimalId) {
+        AnimalRegistry.getById(selectedAnimalId)
+    }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -86,6 +104,7 @@ fun DogVisionApp() {
     }
 
     val startAction = {
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         if (!showCamera) {
             if (hasCameraPermission) showCamera = true
             else launcher.launch(Manifest.permission.CAMERA)
@@ -102,69 +121,92 @@ fun DogVisionApp() {
         if (isCameraActive) {
             var isColorFilterEnabled by rememberSaveable { mutableStateOf(true) }
             var isBlurEnabled by rememberSaveable { mutableStateOf(true) }
+            var isSplitEnabled by rememberSaveable { mutableStateOf(false) }
+            var splitPosition by rememberSaveable { mutableFloatStateOf(0.5f) }
 
-            val playBark = {
-                val barks = listOf(R.raw.dog_bark_1, R.raw.dog_bark_2, R.raw.dog_bark_3)
-                val randomBark = barks.random()
-                try {
-                    val mediaPlayer = MediaPlayer.create(context, randomBark)
-                    mediaPlayer?.let { mp ->
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                            val pitch = (0.85f + Math.random() * 0.5f).toFloat()
-                            mp.playbackParams = mp.playbackParams.setPitch(pitch)
-                        }
-                        mp.setOnCompletionListener { activeMp ->
-                            activeMp.release()
-                        }
-                        mp.start()
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            val soundManager = remember { SoundManager.getInstance(context) }
+            val playAnimalAudio = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                soundManager.playAnimalSound(selectedAnimal.id)
             }
 
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Clicking the background plays a random dog bark sound
+                // Background tap triggers species audio & haptic pulse
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clickable { playBark() }
+                        .clickable { playAnimalAudio() }
                 ) {
                     CameraPreview(
+                        animal = selectedAnimal,
                         isColorFilterEnabled = isColorFilterEnabled,
                         isBlurEnabled = isBlurEnabled,
+                        isSplitEnabled = isSplitEnabled,
+                        splitPosition = splitPosition,
+                        onSplitPositionChange = { splitPosition = it },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                
-                // Subtle transparent floating controls column at the bottom center
+
+                // Top Quick-Switch Animal Bar
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .statusBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    AnimalSelector(
+                        selectedAnimal = selectedAnimal,
+                        onAnimalSelected = { selectedAnimalId = it.id },
+                        compact = true
+                    )
+                }
+
+                // Floating glassmorphic controls column at bottom center
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 40.dp)
+                        .padding(bottom = 36.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = {} // Intercept and consume clicks to avoid triggering barks
+                            onClick = {}
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         EmulationToggleButton(
                             label = stringResource(R.string.lens),
                             isActive = isBlurEnabled,
-                            onClick = { isBlurEnabled = !isBlurEnabled }
+                            activeColor = selectedAnimal.primaryColor,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                isBlurEnabled = !isBlurEnabled
+                            }
                         )
                         EmulationToggleButton(
                             label = stringResource(R.string.receptors),
                             isActive = isColorFilterEnabled,
-                            onClick = { isColorFilterEnabled = !isColorFilterEnabled }
+                            activeColor = selectedAnimal.primaryColor,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                isColorFilterEnabled = !isColorFilterEnabled
+                            }
+                        )
+                        EmulationToggleButton(
+                            label = stringResource(R.string.split_mode),
+                            isActive = isSplitEnabled,
+                            activeColor = selectedAnimal.primaryColor,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                isSplitEnabled = !isSplitEnabled
+                            }
                         )
                     }
 
@@ -174,7 +216,10 @@ fun DogVisionApp() {
                             .clip(RoundedCornerShape(20.dp))
                             .background(Color.White.copy(alpha = 0.15f))
                             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                            .clickable { showCamera = false }
+                            .clickable {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showCamera = false
+                            }
                             .padding(horizontal = 32.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -188,32 +233,54 @@ fun DogVisionApp() {
                 }
             }
         } else {
-            InfoView(onStartClicked = { startAction() })
+            InfoView(
+                selectedAnimal = selectedAnimal,
+                onAnimalSelected = { selectedAnimalId = it.id },
+                onStartClicked = { startAction() }
+            )
         }
     }
 }
 
+// Backward compatibility alias for DogVisionApp
+@ExperimentalCamera2Interop
 @Composable
-fun EmulationToggleButton(label: String, isActive: Boolean, onClick: () -> Unit) {
+fun DogVisionApp() {
+    AnimalVisionApp()
+}
+
+@Composable
+fun EmulationToggleButton(
+    label: String,
+    isActive: Boolean,
+    activeColor: Color = Color(0xFFFFD700),
+    onClick: () -> Unit
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (isActive) activeColor.copy(alpha = 0.9f) else Color.Black.copy(alpha = 0.55f),
+        label = "btn_bg"
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (isActive) Color.Black else Color.White,
+        label = "btn_text"
+    )
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (isActive) Color(0xFFFFD700).copy(alpha = 0.85f)
-                else Color.Black.copy(alpha = 0.5f)
-            )
+            .background(bgColor)
             .border(
                 1.dp,
-                if (isActive) Color(0xFFFFD700) else Color.White.copy(alpha = 0.3f),
+                if (isActive) activeColor else Color.White.copy(alpha = 0.3f),
                 RoundedCornerShape(20.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 9.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label.uppercase(),
-            color = if (isActive) Color.Black else Color.White,
+            color = textColor,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
@@ -221,96 +288,208 @@ fun EmulationToggleButton(label: String, isActive: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-fun InfoView(onStartClicked: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition(label = "dog_float")
-    val offsetY by infiniteTransition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dog_offset"
-    )
+fun InfoView(
+    selectedAnimal: AnimalVisionProfile,
+    onAnimalSelected: (AnimalVisionProfile) -> Unit,
+    onStartClicked: () -> Unit
+) {
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(24.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Language Toggle at Top Right
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
+        // Top Header: App Title & Language Toggle
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                    color = Color.White
+                )
+                Text(
+                    text = stringResource(R.string.subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
             LanguageToggle()
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Image(
-                painter = painterResource(id = R.drawable.ic_dog_cute),
-                contentDescription = "Cute Dog Logo",
-                modifier = Modifier
-                    .size(110.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .offset(y = offsetY.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black),
-                color = Color.White
-            )
-            Text(
-                text = stringResource(R.string.subtitle),
-                style = MaterialTheme.typography.titleMedium,
-                color = Color(0xFFFFD700), // Highlight in yellow
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-        }
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Content Area - Combined comparison
+        // Animal Selector Tabs
+        AnimalSelector(
+            selectedAnimal = selectedAnimal,
+            onAnimalSelected = onAnimalSelected,
+            compact = false
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Main Scrollable Content Box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
+                .verticalScroll(scrollState)
         ) {
-            WavelengthComparison(modifier = Modifier.fillMaxWidth())
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Active Animal Header & Subtitle
+                Text(
+                    text = stringResource(selectedAnimal.nameRes),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = selectedAnimal.primaryColor
+                )
+                Text(
+                    text = selectedAnimal.scientificName,
+                    style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                    color = Color.LightGray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(selectedAnimal.subtitleRes),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Biological Spec Badges Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    SpecBadge(
+                        label = stringResource(R.string.spec_acuity),
+                        value = selectedAnimal.visualAcuity,
+                        highlightColor = selectedAnimal.primaryColor
+                    )
+                    SpecBadge(
+                        label = stringResource(R.string.spec_fov),
+                        value = "${selectedAnimal.fieldOfViewDeg}°",
+                        highlightColor = selectedAnimal.primaryColor
+                    )
+                    SpecBadge(
+                        label = stringResource(R.string.spec_tapetum),
+                        value = selectedAnimal.tapetumBoostMultiplier,
+                        highlightColor = selectedAnimal.primaryColor
+                    )
+                    SpecBadge(
+                        label = stringResource(R.string.spec_uv),
+                        value = if (selectedAnimal.hasUvVision) "YES" else "NO",
+                        highlightColor = if (selectedAnimal.hasUvVision) Color(0xFFE040FB) else Color.Gray
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Description
+                Text(
+                    text = stringResource(selectedAnimal.descriptionRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.LightGray,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+
+                // Key Facts List
+                if (selectedAnimal.keyFacts.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        selectedAnimal.keyFacts.forEach { factRes ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(text = "•", color = selectedAnimal.primaryColor, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = stringResource(factRes),
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Wavelength & Eye Anatomy Comparison
+                WavelengthComparison(
+                    animal = selectedAnimal,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Start Emulation Button
         Button(
             onClick = { onStartClicked() },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                .height(58.dp),
+            shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = selectedAnimal.primaryColor)
         ) {
             Text(
-                text = stringResource(R.string.start_emulation),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                text = "${stringResource(R.string.start_emulation)} (${stringResource(selectedAnimal.nameRes)})".uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
                 color = Color.Black
             )
         }
     }
 }
 
+@Composable
+fun SpecBadge(label: String, value: String, highlightColor: Color) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color.White.copy(alpha = 0.07f))
+            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = highlightColor
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+            color = Color.Gray
+        )
+    }
+}
 
 @Composable
 fun LanguageToggle() {
+    val haptics = LocalHapticFeedback.current
     val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
     val isJp = currentLocale.contains("ja")
 
@@ -325,6 +504,7 @@ fun LanguageToggle() {
             text = stringResource(R.string.lang_en),
             isSelected = !isJp,
             onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("en")
                 AppCompatDelegate.setApplicationLocales(appLocale)
             }
@@ -333,6 +513,7 @@ fun LanguageToggle() {
             text = stringResource(R.string.lang_jp),
             isSelected = isJp,
             onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("ja")
                 AppCompatDelegate.setApplicationLocales(appLocale)
             }
@@ -347,14 +528,14 @@ fun LanguageButton(text: String, isSelected: Boolean, onClick: () -> Unit) {
             .clip(RoundedCornerShape(10.dp))
             .background(if (isSelected) Color(0xFFFFD700) else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             color = if (isSelected) Color.Black else Color.Gray,
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.labelMedium
+            style = MaterialTheme.typography.labelSmall
         )
     }
 }

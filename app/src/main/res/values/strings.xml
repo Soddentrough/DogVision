@@ -1,23 +1,88 @@
 <resources>
-    <string name="app_name">DogVision</string>
-    <string name="subtitle">See the world through your dog\'s eyes</string>
-    <string name="description">Turns raw camera sensor data into an anatomically and physically accurate simulation of a dog\'s lens and photoreceptors</string>
-    <string name="tab_sensitivity">Sensitivity</string>
-    <string name="tab_anatomy">Anatomy</string>
+    <string name="app_name">AnimalVision</string>
+    <string name="subtitle">See the world through nature\'s eyes</string>
+    <string name="description">Transforms camera sensor data into anatomically and physically accurate spectral simulations of animal photoreceptors, lenses, and retinal optics.</string>
     <string name="start_emulation">START EMULATION</string>
     <string name="button_return">Return</string>
-    <string name="visible_spectrum_rgb">Visible Spectrum (RGB)</string>
+    <string name="visible_spectrum_rgb">Visible Spectrum (Human Trichromat)</string>
+    <string name="visible_spectrum_animal">Animal Perceived Spectrum</string>
     <string name="visible_spectrum_by">Visible Spectrum (B/Y)</string>
     <string name="human_trichromat">Human (Trichromat)</string>
     <string name="dog_dichromat">Dog (Dichromat)</string>
-    <string name="lens">Lens</string>
+    <string name="deer_dichromat">Deer (Dichromat + UV Open)</string>
+    <string name="cat_dichromat">Cat (Dichromat + Scotopic)</string>
+    <string name="bird_tetrachromat">Bird (Tetrachromat + UV)</string>
+    <string name="bee_trichromat">Bee (UV-B-G + Ommatidia)</string>
+    <string name="snake_thermal">Pit Viper (Dichromat + Thermal IR)</string>
+
+    <string name="lens">Optics</string>
     <string name="receptors">Receptors</string>
-    <string name="calibrating_vision">Calibrating Vision...</string>
-    <string name="eye_anatomy_comparison">Eye Anatomy Comparison</string>
+    <string name="split_mode">Split</string>
+    <string name="human_label">Human</string>
+    <string name="dog_label">Dog</string>
+    <string name="calibrating_vision">Calibrating Spectral Sensors&#8230;</string>
+    <string name="eye_anatomy_comparison">Eye Anatomy &amp; Retinal Comparison</string>
     <string name="human">Human</string>
-    <string name="dog">Dog</string>
-    <string name="fovea_detail">Fovea (High Detail)</string>
-    <string name="tapetum_night_vision">Tapetum (Night Vision)</string>
+    <string name="fovea_detail">Fovea Centralis (High Detail)</string>
+    <string name="tapetum_night_vision">Tapetum Lucidum (Night Glow)</string>
     <string name="lang_en">EN</string>
     <string name="lang_jp">JP</string>
+
+    <!-- Spec Badges -->
+    <string name="spec_acuity">Acuity</string>
+    <string name="spec_fov">Field of View</string>
+    <string name="spec_tapetum">Low-Light Gain</string>
+    <string name="spec_uv">UV Sensing</string>
+    <string name="spec_pupil">Pupil Shape</string>
+
+    <!-- Animals -->
+    <!-- Dog -->
+    <string name="animal_dog_name">Dog</string>
+    <string name="animal_dog_subtitle">Canine Dichromatic Motion Hunter</string>
+    <string name="animal_dog_desc">Dogs have two types of cone photoreceptors (S at 435nm, M/L at 555nm). They see the world in blue and yellow hues, are red-green color blind (deuteranopia), and have a reflective tapetum lucidum enhancing twilight sensitivity by 4–5x.</string>
+    <string name="dog_fact_1">Red-Green Blind (Deuteranopia): Reds &amp; greens appear yellow-brown</string>
+    <string name="dog_fact_2">20/75 Visual Acuity: 3–4x blurrier than human 20/20 vision</string>
+    <string name="dog_fact_3">Tapetum Lucidum: 4–5x light amplification in dark conditions</string>
+
+    <!-- Deer -->
+    <string name="animal_deer_name">White-Tailed Deer</string>
+    <string name="animal_deer_subtitle">Crepuscular Prey with UV Sensitivity</string>
+    <string name="animal_deer_desc">Deer possess dichromatic vision with cones peaking at 455nm (S-cone) and 537nm (M-cone). Lacking a UV filter in their lens, they perceive blue/UV light ~20x more prominently. With no red L-cones, hunter blaze orange appears as a dull, low-contrast brownish-gray.</string>
+    <string name="deer_fact_1">20/60 Acuity &amp; Horizontal Streak: Sharpest along the horizon</string>
+    <string name="deer_fact_2">No UV Filter: Blue jeans &amp; UV brighteners glow 20x brighter</string>
+    <string name="deer_fact_3">Blaze Orange Camouflage: 537nm cone cutoff turns blaze orange into dull brown/gray</string>
+    <string name="deer_fact_4">18x Twilight Vision: Horizontal tapetum maximizes dawn &amp; dusk light</string>
+    <string name="deer_fact_5">300° Panoramic FOV: Horizontal slit pupils with 50° cyclovergence rotation</string>
+
+    <!-- Cat -->
+    <string name="animal_cat_name">Cat</string>
+    <string name="animal_cat_subtitle">Nocturnal Ambush Predator</string>
+    <string name="animal_cat_desc">Cats have a 25:1 rod-to-cone ratio optimized for twilight hunting. Their vertical slit pupils and huge retroreflective tapetum provide 6–8x night amplification. Colors appear soft and pastel with intense green-cyan night sensitivity.</string>
+    <string name="cat_fact_1">25:1 Rod-to-Cone Ratio: High motion detection, pastel colors</string>
+    <string name="cat_fact_2">Vertical Stenopaeic Slit Pupil: Pinpoint light control from bright sun to darkness</string>
+    <string name="cat_fact_3">6–8x Night Vision: Massive tapetum lucidum reflection</string>
+
+    <!-- Bird -->
+    <string name="animal_bird_name">Hawk / Raptor</string>
+    <string name="animal_bird_subtitle">Avian Tetrachromat with Oil Droplet Filters</string>
+    <string name="animal_bird_desc">Birds have four cone classes (UV/Violet ~380nm, Blue ~450nm, Green ~535nm, Red ~570nm) equipped with colored carotenoid oil droplets that act as sharp optical bandpass filters. They perceive a hyperspectral color gamut and possess ultra-sharp 20/5 visual acuity.</string>
+    <string name="bird_fact_1">Tetrachromacy: 4 cone types perceiving ultraviolet plumage and trails</string>
+    <string name="bird_fact_2">Carotenoid Oil Droplets: Sharpen wavelength separation for extreme color contrast</string>
+    <string name="bird_fact_3">20/5 Visual Acuity: 4x sharper than human vision with deep dual foveas</string>
+
+    <!-- Bee -->
+    <string name="animal_bee_name">Honeybee</string>
+    <string name="animal_bee_subtitle">UV-Blue-Green Compound Vision</string>
+    <string name="animal_bee_desc">Bees see ultraviolet (345nm), blue (440nm), and green (540nm), but are completely blind to red (which appears black). Their compound eye contains ~5000 hexagonal ommatidia facets, revealing hidden UV "nectar guides" on flower petals.</string>
+    <string name="bee_fact_1">Red Blind: Long red wavelengths (>580nm) appear black</string>
+    <string name="bee_fact_2">UV Nectar Guides: Petals show vibrant UV patterns guiding to nectar</string>
+    <string name="bee_fact_3">Hexagonal Ommatidia: Mosaic compound eye resolution</string>
+
+    <!-- Snake -->
+    <string name="animal_snake_name">Pit Viper</string>
+    <string name="animal_snake_subtitle">Visual Dichromacy + Thermal IR Pit Organ</string>
+    <string name="animal_snake_desc">Pit vipers combine dichromatic optical vision with bilateral facial pit organs sensitive to long-wave thermal infrared (8–12µm). Neural processing in the optic tectum fuses optical imagery with a false-color thermal heat map of warm-blooded prey.</string>
+    <string name="snake_fact_1">Thermal Pit Organs: Detects radiant infrared body heat at 8–12µm</string>
+    <string name="snake_fact_2">Optic Tectum Fusion: Merges visual light and thermal heat maps</string>
+    <string name="snake_fact_3">Dichromatic Background: Adapted for motion and nocturnal hunting</string>
 </resources>
