@@ -143,6 +143,19 @@ fun CameraPreview(
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                     scaleType = PreviewView.ScaleType.FILL_CENTER
 
+                    addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+                        val w = (right - left).toFloat().coerceAtLeast(1f)
+                        val h = (bottom - top).toFloat().coerceAtLeast(1f)
+                        val oldW = (oldRight - oldLeft).toFloat()
+                        val oldH = (oldBottom - oldTop).toFloat()
+                        if (w > 1f && h > 1f && (w != oldW || h != oldH)) {
+                            shader.setFloatUniform("screenWidth", w)
+                            shader.setFloatUniform("screenHeight", h)
+                            val effect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
+                            setRenderEffect(effect)
+                        }
+                    }
+
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
                         val cameraSelector = selectBestCamera(cameraProvider.availableCameraInfos)
@@ -186,6 +199,14 @@ fun CameraPreview(
                             })
 
                             isCameraReady = true
+                            post {
+                                val w = if (containerSize.width > 0) containerSize.width.toFloat() else width.toFloat().coerceAtLeast(1f)
+                                val h = if (containerSize.height > 0) containerSize.height.toFloat() else height.toFloat().coerceAtLeast(1f)
+                                shader.setFloatUniform("screenWidth", w)
+                                shader.setFloatUniform("screenHeight", h)
+                                val effect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
+                                setRenderEffect(effect)
+                            }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -194,8 +215,18 @@ fun CameraPreview(
             },
             modifier = Modifier.fillMaxSize(),
             update = { previewView ->
-                val viewWidth = previewView.width.toFloat().coerceAtLeast(1f)
-                val viewHeight = previewView.height.toFloat().coerceAtLeast(1f)
+                // Observe isCameraReady and containerSize so Compose re-executes update on layout or camera binding
+                val isReady = isCameraReady
+                val viewWidth = if (containerSize.width > 0) {
+                    containerSize.width.toFloat()
+                } else {
+                    previewView.width.toFloat().coerceAtLeast(1f)
+                }
+                val viewHeight = if (containerSize.height > 0) {
+                    containerSize.height.toFloat()
+                } else {
+                    previewView.height.toFloat().coerceAtLeast(1f)
+                }
 
                 shader.setFloatUniform("splitPos", splitPosition)
                 shader.setFloatUniform("isSplitMode", if (isSplitEnabled) 1.0f else 0.0f)
