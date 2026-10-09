@@ -133,22 +133,49 @@ fun CameraPreview(
     var isCameraReady by remember { mutableStateOf(false) }
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
     var boundCamera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
+    var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
 
     val shader = remember { AnimalVisionShader.createShader() }
-    val renderEffect = remember(shader) { RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer") }
     var elapsedTimeSec by remember { mutableFloatStateOf(0f) }
 
-    // Only run high-frequency frame animation when the selected profile actually uses time (Drunk Human)
-    LaunchedEffect(animal.id) {
+    val currentAnimal by rememberUpdatedState(animal)
+    val currentBlur by rememberUpdatedState(isBlurEnabled)
+    val currentColorFilter by rememberUpdatedState(isColorFilterEnabled)
+    val currentSplitEnabled by rememberUpdatedState(isSplitEnabled)
+    val currentSplitPosition by rememberUpdatedState(splitPosition)
+
+    fun applyShaderTo(pv: PreviewView, t: Float) {
+        val w = if (containerSize.width > 0) containerSize.width.toFloat() else pv.width.toFloat().coerceAtLeast(1f)
+        val h = if (containerSize.height > 0) containerSize.height.toFloat() else pv.height.toFloat().coerceAtLeast(1f)
+        shader.setFloatUniform("splitPos", currentSplitPosition)
+        shader.setFloatUniform("isSplitMode", if (currentSplitEnabled) 1.0f else 0.0f)
+        shader.setFloatUniform("isBlurEnabled", if (currentBlur) 1.0f else 0.0f)
+        shader.setFloatUniform("isColorFilter", if (currentColorFilter) 1.0f else 0.0f)
+        shader.setFloatUniform("screenWidth", w)
+        shader.setFloatUniform("screenHeight", h)
+        shader.setFloatUniform("time", t)
+
+        AnimalVisionShader.applyProfile(shader, currentAnimal, density.density)
+
+        val effect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
+        pv.setRenderEffect(effect)
+    }
+
+    // High-frequency frame animation when the selected profile uses time (Drunk Human)
+    LaunchedEffect(animal.id, previewViewRef) {
+        val pv = previewViewRef ?: return@LaunchedEffect
         if (animal.id == "drunk_human") {
             val startNanos = System.nanoTime()
             while (true) {
                 withFrameNanos { frameNanos ->
-                    elapsedTimeSec = ((frameNanos - startNanos) / 1_000_000_000.0).toFloat()
+                    val t = ((frameNanos - startNanos) / 1_000_000_000.0).toFloat()
+                    elapsedTimeSec = t
+                    applyShaderTo(pv, t)
                 }
             }
         } else {
             elapsedTimeSec = 0f
+            applyShaderTo(pv, 0f)
         }
     }
 
@@ -187,6 +214,7 @@ fun CameraPreview(
                 PreviewView(ctx).apply {
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                     scaleType = PreviewView.ScaleType.FILL_CENTER
+                    previewViewRef = this
 
                     addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
                         val w = (right - left).toFloat().coerceAtLeast(1f)
@@ -194,10 +222,7 @@ fun CameraPreview(
                         val oldW = (oldRight - oldLeft).toFloat()
                         val oldH = (oldBottom - oldTop).toFloat()
                         if (w > 1f && h > 1f && (w != oldW || h != oldH)) {
-                            shader.setFloatUniform("screenWidth", w)
-                            shader.setFloatUniform("screenHeight", h)
-                            val effect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
-                            setRenderEffect(effect)
+                            applyShaderTo(this, elapsedTimeSec)
                         }
                     }
 
@@ -247,12 +272,7 @@ fun CameraPreview(
 
                             isCameraReady = true
                             post {
-                                val w = if (containerSize.width > 0) containerSize.width.toFloat() else width.toFloat().coerceAtLeast(1f)
-                                val h = if (containerSize.height > 0) containerSize.height.toFloat() else height.toFloat().coerceAtLeast(1f)
-                                shader.setFloatUniform("screenWidth", w)
-                                shader.setFloatUniform("screenHeight", h)
-                                val effect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
-                                setRenderEffect(effect)
+                                applyShaderTo(this, elapsedTimeSec)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -262,31 +282,8 @@ fun CameraPreview(
             },
             modifier = Modifier.fillMaxSize(),
             update = { previewView ->
-                // Observe isCameraReady and containerSize so Compose re-executes update on layout or camera binding
-                val isReady = isCameraReady
-                val viewWidth = if (containerSize.width > 0) {
-                    containerSize.width.toFloat()
-                } else {
-                    previewView.width.toFloat().coerceAtLeast(1f)
-                }
-                val viewHeight = if (containerSize.height > 0) {
-                    containerSize.height.toFloat()
-                } else {
-                    previewView.height.toFloat().coerceAtLeast(1f)
-                }
-
-                shader.setFloatUniform("splitPos", splitPosition)
-                shader.setFloatUniform("isSplitMode", if (isSplitEnabled) 1.0f else 0.0f)
-                shader.setFloatUniform("isBlurEnabled", if (isBlurEnabled) 1.0f else 0.0f)
-                shader.setFloatUniform("isColorFilter", if (isColorFilterEnabled) 1.0f else 0.0f)
-                shader.setFloatUniform("screenWidth", viewWidth)
-                shader.setFloatUniform("screenHeight", viewHeight)
-                shader.setFloatUniform("time", elapsedTimeSec)
-
-                AnimalVisionShader.applyProfile(shader, animal, density.density)
-
-                previewView.setRenderEffect(renderEffect)
-                previewView.invalidate()
+                previewViewRef = previewView
+                applyShaderTo(previewView, elapsedTimeSec)
             }
         )
 

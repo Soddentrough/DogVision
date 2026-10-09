@@ -14,14 +14,18 @@ import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -77,11 +81,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        SoundManager.getInstance(applicationContext).release()
     }
 }
 
@@ -167,93 +166,65 @@ fun AnimalVisionApp(viewModel: AnimalVisionViewModel) {
                     )
                 }
 
-                // Top Quick-Switch Animal Bar
-                Box(
+                // Top Bar: Go Back button on left, Animal Selector on right
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .statusBarsPadding()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // Go Back Icon Button
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .border(1.dp, Color.White.copy(alpha = 0.35f), CircleShape)
+                            .clickable {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.setCameraActive(false)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.size(20.dp)) {
+                            val strokeWidth = 2.5.dp.toPx()
+                            val midY = size.height / 2f
+                            val startX = size.width * 0.25f
+                            val endX = size.width * 0.75f
+                            val arrowHead = size.width * 0.28f
+
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(startX, midY),
+                                end = Offset(endX, midY),
+                                strokeWidth = strokeWidth,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(startX, midY),
+                                end = Offset(startX + arrowHead, midY - arrowHead),
+                                strokeWidth = strokeWidth,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White,
+                                start = Offset(startX, midY),
+                                end = Offset(startX + arrowHead, midY + arrowHead),
+                                strokeWidth = strokeWidth,
+                                cap = androidx.compose.ui.graphics.StrokeCap.Round
+                            )
+                        }
+                    }
+
                     AnimalSelector(
                         selectedAnimal = selectedAnimal,
                         onAnimalSelected = { viewModel.selectAnimal(it) },
                         compact = true
                     )
-                }
-
-                // Floating glassmorphic controls row at bottom center
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(horizontal = 8.dp, vertical = 24.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        ),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Return / Back Button
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.Black.copy(alpha = 0.55f))
-                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                            .clickable {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.setCameraActive(false)
-                            }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.button_return),
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    EmulationToggleButton(
-                        label = stringResource(R.string.lens),
-                        isActive = uiState.isBlurEnabled,
-                        activeColor = selectedAnimal.primaryColor,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.toggleBlur()
-                        }
-                    )
-                    EmulationToggleButton(
-                        label = stringResource(R.string.receptors),
-                        isActive = uiState.isColorFilterEnabled,
-                        activeColor = selectedAnimal.primaryColor,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.toggleColorFilter()
-                        }
-                    )
-                    EmulationToggleButton(
-                        label = stringResource(R.string.split_mode),
-                        isActive = uiState.isSplitEnabled,
-                        activeColor = selectedAnimal.primaryColor,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.toggleSplitMode()
-                        }
-                    )
-                    if (uiState.isTorchAvailable) {
-                        EmulationToggleButton(
-                            label = stringResource(if (uiState.isTorchEnabled) R.string.torch_on else R.string.torch_off),
-                            isActive = uiState.isTorchEnabled,
-                            activeColor = Color(0xFFFFEB3B),
-                            onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.toggleTorch()
-                            }
-                        )
-                    }
                 }
             }
         } else {

@@ -7,34 +7,35 @@ plugins {
 
 android {
     namespace = "com.example.dogvision"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.soddentrough.dogvision"
         minSdk = 33
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
     }
 
     signingConfigs {
         create("release") {
-            val properties = Properties()
-            val propertiesFile = rootProject.file("local.properties")
-            if (propertiesFile.exists()) {
-                propertiesFile.inputStream().use { properties.load(it) }
-                val keystoreFile = properties.getProperty("RELEASE_KEYSTORE_FILE")
-                if (keystoreFile != null) {
-                    storeFile = file(keystoreFile)
-                }
-                storePassword = properties.getProperty("RELEASE_KEYSTORE_PASSWORD")
-                keyAlias = properties.getProperty("RELEASE_KEY_ALIAS")
-                keyPassword = properties.getProperty("RELEASE_KEY_PASSWORD")
+            // Signing material lives OUTSIDE version control. Create a gitignored
+            // keystore.properties at the project root with:
+            //   storeFile=/absolute/path/to/release.jks
+            //   storePassword=...
+            //   keyAlias=...
+            //   keyPassword=...
+            // On CI, generate keystore.properties from sealed secrets.
+            val ksProps = Properties()
+            val ksPropsFile = rootProject.file("keystore.properties")
+            if (ksPropsFile.exists()) {
+                ksPropsFile.inputStream().use { ksProps.load(it) }
+                ksProps.getProperty("storeFile")?.let { storeFile = file(it) }
+                storePassword = ksProps.getProperty("storePassword")
+                keyAlias = ksProps.getProperty("keyAlias")
+                keyPassword = ksProps.getProperty("keyPassword")
             }
         }
     }
@@ -51,8 +52,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -75,7 +76,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    
+
     // CameraX
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)

@@ -3,13 +3,22 @@ package com.example.dogvision
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.random.Random
 
+/**
+ * Low-latency species vocalization playback backed by [SoundPool].
+ *
+ * Each species has its own recorded/synthesized asset; small pitch jitter keeps
+ * repeated playback from sounding mechanical.
+ *
+ * Lifecycle: app-scoped singleton. Deliberately NOT released from Activity
+ * onDestroy() — releasing a process singleton on a configuration change would
+ * permanently kill audio for the remaining process lifetime. The OS reclaims
+ * the SoundPool at process death; [release] exists for explicit teardown tests.
+ */
 class SoundManager private constructor(context: Context) {
     private val soundPool: SoundPool
-    private val barkSoundIds = mutableListOf<Int>()
-    private val burpSoundIds = mutableListOf<Int>()
-    private val isLoaded = AtomicBoolean(false)
+    private val speciesSounds: Map<String, List<Int>>
 
     init {
         val audioAttributes = AudioAttributes.Builder()
@@ -22,66 +31,40 @@ class SoundManager private constructor(context: Context) {
             .setAudioAttributes(audioAttributes)
             .build()
 
-        val barkResIds = listOf(R.raw.dog_bark_1, R.raw.dog_bark_2, R.raw.dog_bark_3)
-        val burpResIds = listOf(R.raw.burp_1, R.raw.burp_2, R.raw.burp_3)
-        val totalSounds = barkResIds.size + burpResIds.size
-        var loadCount = 0
-
-        soundPool.setOnLoadCompleteListener { _, _, status ->
-            if (status == 0) {
-                loadCount++
-                if (loadCount >= totalSounds) {
-                    isLoaded.set(true)
-                }
-            }
-        }
-
-        for (resId in barkResIds) {
-            val id = soundPool.load(context.applicationContext, resId, 1)
-            barkSoundIds.add(id)
-        }
-
-        for (resId in burpResIds) {
-            val id = soundPool.load(context.applicationContext, resId, 1)
-            burpSoundIds.add(id)
-        }
+        val appContext = context.applicationContext
+        speciesSounds = mapOf(
+            "dog" to listOf(R.raw.dog_bark_1, R.raw.dog_bark_2, R.raw.dog_bark_3),
+            "deer" to listOf(R.raw.deer_bleat_1),
+            "cat" to listOf(R.raw.cat_meow_1),
+            "hawk" to listOf(R.raw.bird_chirp_1),
+            "bird" to listOf(R.raw.bird_chirp_1),
+            "bee" to listOf(R.raw.bee_buzz_1),
+            "snake" to listOf(R.raw.snake_hiss_1),
+            "drunk_human" to listOf(R.raw.burp_1, R.raw.burp_2, R.raw.burp_3),
+        ).mapValues { (_, resIds) -> resIds.map { soundPool.load(appContext, it, 1) } }
     }
 
     fun playAnimalSound(animalId: String = "dog") {
         try {
-            if (animalId == "drunk_human") {
-                playBurpSound()
-                return
-            }
-
-            if (barkSoundIds.isEmpty()) return
-            val randomSoundId = barkSoundIds.random()
+            val ids = speciesSounds[animalId] ?: speciesSounds["dog"] ?: return
+            val soundId = ids.random()
             val pitch = when (animalId) {
-                "deer" -> 0.70f + (Math.random() * 0.2f).toFloat() // Lower pitch grunt/bleat tone
-                "cat" -> 1.30f + (Math.random() * 0.3f).toFloat()  // Higher pitch
-                "bird" -> 1.50f + (Math.random() * 0.4f).toFloat() // High pitch chirp/cry
-                "bee" -> 0.60f + (Math.random() * 0.15f).toFloat() // Low frequency buzz tone
-                "snake" -> 0.80f + (Math.random() * 0.2f).toFloat()
-                else -> (0.85f + Math.random() * 0.5f).toFloat()    // Dog bark pitch
+                "deer" -> 0.92f + Random.nextFloat() * 0.16f
+                "cat" -> 0.90f + Random.nextFloat() * 0.25f
+                "hawk", "bird" -> 0.88f + Random.nextFloat() * 0.30f
+                "bee" -> 0.90f + Random.nextFloat() * 0.20f
+                "snake" -> 0.88f + Random.nextFloat() * 0.24f
+                "drunk_human" -> 0.90f + Random.nextFloat() * 0.20f
+                else -> 0.85f + Random.nextFloat() * 0.30f // dog
             }
-            soundPool.play(randomSoundId, 1.0f, 1.0f, 1, 0, pitch)
+            soundPool.play(soundId, 1.0f, 1.0f, 1, 0, pitch)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    /**
-     * Plays authentic real recorded burp sound effects with subtle natural pitch variation.
-     */
     fun playBurpSound() {
-        try {
-            if (burpSoundIds.isEmpty()) return
-            val randomBurpId = burpSoundIds.random()
-            val pitch = (0.90f + Math.random() * 0.20f).toFloat() // 0.90 - 1.10 natural pitch
-            soundPool.play(randomBurpId, 1.0f, 1.0f, 1, 0, pitch)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        playAnimalSound("drunk_human")
     }
 
     fun playRandomBark() {
@@ -103,10 +86,9 @@ class SoundManager private constructor(context: Context) {
         @Volatile
         private var instance: SoundManager? = null
 
-        fun getInstance(context: Context): SoundManager {
-            return instance ?: synchronized(this) {
+        fun getInstance(context: Context): SoundManager =
+            instance ?: synchronized(this) {
                 instance ?: SoundManager(context.applicationContext).also { instance = it }
             }
-        }
     }
 }
