@@ -45,7 +45,13 @@ fun EyeDiagram(
             ) {
                 Text(text = stringResource(animal.nameRes), style = MaterialTheme.typography.labelMedium, color = animal.primaryColor)
                 EyeDrawing(animal = animal, modifier = Modifier.size(100.dp))
-                val label = if (animal.hasTapetum) stringResource(R.string.tapetum_night_vision) else animal.pupilType.name
+                val label = if (animal.hasTapetum) {
+                    stringResource(R.string.tapetum_night_vision)
+                } else if (animal.id == "drunk_human") {
+                    "Dilated / Diplopia"
+                } else {
+                    animal.pupilType.name
+                }
                 Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             }
         }
@@ -122,8 +128,9 @@ fun EyeDrawing(animal: AnimalVisionProfile?, modifier: Modifier = Modifier) {
                 drawCircle(Color.Magenta, radius = 4f, center = Offset(center.x - radius * 0.75f, center.y + radius * 0.35f))
             }
             else -> {
-                // Circular pupil / Human / Dog
-                drawCircle(pupilColor, radius = radius * 0.18f, center = Offset(center.x + radius * 0.2f, center.y))
+                // Circular pupil / Human / Dog / Drunk Human
+                val pRadius = if (animal?.id == "drunk_human") radius * 0.25f else radius * 0.18f
+                drawCircle(pupilColor, radius = pRadius, center = Offset(center.x + radius * 0.2f, center.y))
             }
         }
 
@@ -151,6 +158,10 @@ fun EyeDrawing(animal: AnimalVisionProfile?, modifier: Modifier = Modifier) {
                 size = size * 0.848f,
                 style = Stroke(width = 2.5f)
             )
+        } else if (animal?.id == "drunk_human") {
+            // Split Diplopic Focal points
+            drawCircle(animal.primaryColor, radius = 4f, center = Offset(center.x - radius * 0.92f, center.y - 5f))
+            drawCircle(animal.primaryColor.copy(alpha = 0.6f), radius = 4f, center = Offset(center.x - radius * 0.92f, center.y + 5f))
         } else if (animal == null) {
             // Human Fovea Centralis point
             drawCircle(Color.Red, radius = 4f, center = Offset(center.x - radius * 0.92f, center.y))

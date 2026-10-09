@@ -12,6 +12,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -121,6 +122,8 @@ fun CameraPreview(
     isSplitEnabled: Boolean,
     splitPosition: Float,
     onSplitPositionChange: (Float) -> Unit,
+    isTorchEnabled: Boolean = false,
+    onTorchAvailable: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -129,8 +132,50 @@ fun CameraPreview(
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     var isCameraReady by remember { mutableStateOf(false) }
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
+    var boundCamera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
 
     val shader = remember { AnimalVisionShader.createShader() }
+    val renderEffect = remember(shader) { RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer") }
+    var elapsedTimeSec by remember { mutableFloatStateOf(0f) }
+
+    // Only run high-frequency frame animation when the selected profile actually uses time (Drunk Human)
+    LaunchedEffect(animal.id) {
+        if (animal.id == "drunk_human") {
+            val startNanos = System.nanoTime()
+            while (true) {
+                withFrameNanos { frameNanos ->
+                    elapsedTimeSec = ((frameNanos - startNanos) / 1_000_000_000.0).toFloat()
+                }
+            }
+        } else {
+            elapsedTimeSec = 0f
+        }
+    }
+
+    // Toggle flashlight / torch on active camera
+    LaunchedEffect(isTorchEnabled, boundCamera) {
+        boundCamera?.let { cam ->
+            if (cam.cameraInfo.hasFlashUnit()) {
+                try {
+                    cam.cameraControl.enableTorch(isTorchEnabled)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    // Unbind camera provider when leaving composition to prevent resource leak
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            try {
+                cameraProviderFuture.get()?.unbindAll()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            boundCamera = null
+        }
+    }
 
     Box(
         modifier = modifier
@@ -186,6 +231,8 @@ fun CameraPreview(
                                 cameraSelector,
                                 preview
                             )
+                            boundCamera = camera
+                            onTorchAvailable(camera.cameraInfo.hasFlashUnit())
 
                             val zoomStateLiveData = camera.cameraInfo.zoomState
                             zoomStateLiveData.observe(lifecycleOwner, object : androidx.lifecycle.Observer<androidx.camera.core.ZoomState> {
@@ -234,11 +281,12 @@ fun CameraPreview(
                 shader.setFloatUniform("isColorFilter", if (isColorFilterEnabled) 1.0f else 0.0f)
                 shader.setFloatUniform("screenWidth", viewWidth)
                 shader.setFloatUniform("screenHeight", viewHeight)
+                shader.setFloatUniform("time", elapsedTimeSec)
 
-                AnimalVisionShader.applyProfile(shader, animal)
+                AnimalVisionShader.applyProfile(shader, animal, density.density)
 
-                val renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "inputBuffer")
                 previewView.setRenderEffect(renderEffect)
+                previewView.invalidate()
             }
         )
 
@@ -285,17 +333,9 @@ fun CameraPreview(
                 }
             }
 
-            // Draggable Divider Line & Handle
+            // Draggable Divider Line & Handle (Touch bounded to handle area, relative dragging)
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(containerSize.width) {
-                        detectHorizontalDragGestures { change, _ ->
-                            change.consume()
-                            val newFraction = (change.position.x / containerSize.width.toFloat()).coerceIn(0.05f, 0.95f)
-                            onSplitPositionChange(newFraction)
-                        }
-                    }
+                modifier = Modifier.fillMaxSize()
             ) {
                 // Vertical Line
                 Box(
@@ -309,28 +349,46 @@ fun CameraPreview(
                         .background(Color.White.copy(alpha = 0.85f))
                 )
 
-                // Center Drag Handle
+                // Draggable Touch Strip and Center Handle
+                val handleTouchWidthPx = with(density) { 64.dp.toPx() }
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .offset {
-                            val handleRadiusPx = with(density) { 20.dp.toPx() }
-                            IntOffset(x = (dividerX - handleRadiusPx).roundToInt(), y = 0)
+                            val halfTouchPx = handleTouchWidthPx / 2f
+                            IntOffset(x = (dividerX - halfTouchPx).roundToInt(), y = 0)
                         }
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(animal.primaryColor)
-                        .padding(8.dp),
+                        .width(64.dp)
+                        .fillMaxHeight()
+                        .pointerInput(containerSize.width) {
+                            detectHorizontalDragGestures { change, dragAmount ->
+                                change.consume()
+                                if (containerSize.width > 0) {
+                                    val deltaFraction = dragAmount / containerSize.width.toFloat()
+                                    onSplitPositionChange((splitPosition + deltaFraction).coerceIn(0.05f, 0.95f))
+                                }
+                            }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.size(16.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.7f, h * 0.5f), strokeWidth = 3f)
-                        drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.45f, h * 0.25f), strokeWidth = 3f)
-                        drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.45f, h * 0.75f), strokeWidth = 3f)
-                        drawLine(Color.Black, Offset(w * 0.7f, h * 0.5f), Offset(w * 0.55f, h * 0.25f), strokeWidth = 3f)
-                        drawLine(Color.Black, Offset(w * 0.7f, h * 0.5f), Offset(w * 0.55f, h * 0.75f), strokeWidth = 3f)
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(animal.primaryColor)
+                            .border(2.dp, Color.White.copy(alpha = 0.85f), CircleShape)
+                            .padding(8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Canvas(modifier = Modifier.size(16.dp)) {
+                            val w = size.width
+                            val h = size.height
+                            drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.7f, h * 0.5f), strokeWidth = 3f)
+                            drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.45f, h * 0.25f), strokeWidth = 3f)
+                            drawLine(Color.Black, Offset(w * 0.3f, h * 0.5f), Offset(w * 0.45f, h * 0.75f), strokeWidth = 3f)
+                            drawLine(Color.Black, Offset(w * 0.7f, h * 0.5f), Offset(w * 0.55f, h * 0.25f), strokeWidth = 3f)
+                            drawLine(Color.Black, Offset(w * 0.7f, h * 0.5f), Offset(w * 0.55f, h * 0.75f), strokeWidth = 3f)
+                        }
                     }
                 }
             }

@@ -12,10 +12,12 @@ object AnimalVisionShader {
         uniform float isColorFilter;     // 1.0 = enabled, 0.0 = disabled
         uniform float screenWidth;
         uniform float screenHeight;
-        uniform float animalType;        // 0=Dog, 1=Deer, 2=Cat, 3=Bird, 4=Bee, 5=Snake
+        uniform float density;           // Display pixel density scale factor
+        uniform float animalType;        // 0=Dog, 1=Deer, 2=Cat, 3=Bird, 4=Bee, 5=Snake, 6=Drunk Human
         uniform float tapetumBoost;      // Gain factor for low-light tapetum retroreflection
         uniform float uvGain;            // Near-UV spectral excitation gain
         uniform float desaturation;      // Retinal cone density desaturation weight
+        uniform float time;              // Time in seconds for animated effects
 
         float3 srgbToLinear(float3 srgb) {
             return pow(srgb, float3(2.2));
@@ -37,18 +39,18 @@ object AnimalVisionShader {
         }
 
         // Horizontal visual streak for deer: sharper along horizontal horizon, blurrier vertically
-        half4 sampleDeerStreak(float2 fragCoord) {
+        half4 sampleDeerStreak(float2 fragCoord, float d) {
             half4 c = inputBuffer.eval(fragCoord) * 0.30;
-            c += (inputBuffer.eval(fragCoord + float2(0.0, 3.0)) + inputBuffer.eval(fragCoord - float2(0.0, 3.0))) * 0.22;
-            c += (inputBuffer.eval(fragCoord + float2(0.0, 6.0)) + inputBuffer.eval(fragCoord - float2(0.0, 6.0))) * 0.13;
+            c += (inputBuffer.eval(fragCoord + float2(0.0, 3.0 * d)) + inputBuffer.eval(fragCoord - float2(0.0, 3.0 * d))) * 0.22;
+            c += (inputBuffer.eval(fragCoord + float2(0.0, 6.0 * d)) + inputBuffer.eval(fragCoord - float2(0.0, 6.0 * d))) * 0.13;
             return c;
         }
 
         // Vertical slit pupil blur for cat
-        half4 sampleCatSlit(float2 fragCoord) {
+        half4 sampleCatSlit(float2 fragCoord, float d) {
             half4 c = inputBuffer.eval(fragCoord) * 0.30;
-            c += (inputBuffer.eval(fragCoord + float2(3.5, 0.0)) + inputBuffer.eval(fragCoord - float2(3.5, 0.0))) * 0.22;
-            c += (inputBuffer.eval(fragCoord + float2(7.0, 0.0)) + inputBuffer.eval(fragCoord - float2(7.0, 0.0))) * 0.13;
+            c += (inputBuffer.eval(fragCoord + float2(3.5 * d, 0.0)) + inputBuffer.eval(fragCoord - float2(3.5 * d, 0.0))) * 0.22;
+            c += (inputBuffer.eval(fragCoord + float2(7.0 * d, 0.0)) + inputBuffer.eval(fragCoord - float2(7.0 * d, 0.0))) * 0.13;
             return c;
         }
 
@@ -94,6 +96,75 @@ object AnimalVisionShader {
             return (length(coord - c1) < length(coord - c2)) ? c1 : c2;
         }
 
+        // Drunk Human (6): Diplopia (double vision), ciliary accommodation blur, vestibular sway, chromatic aberration & tunnel vision
+        half4 sampleDrunkVision(float2 fragCoord, float w, float h, float t) {
+            float2 center = float2(w * 0.5, h * 0.5);
+
+            // 1. Vestibular ataxia sway: slow erratic drift + slight rotational wobble
+            float swayX = sin(t * 1.2) * 14.0 + cos(t * 0.65) * 8.0;
+            float swayY = cos(t * 0.95) * 12.0 + sin(t * 1.8) * 6.0;
+            float angle = sin(t * 0.75) * 0.025; // ~1.5 degree rotational wobble
+
+            // Apply rotation around center
+            float2 relCoord = fragCoord - center;
+            float cosA = cos(angle);
+            float sinA = sin(angle);
+            float2 rotatedCoord = float2(
+                relCoord.x * cosA - relCoord.y * sinA,
+                relCoord.x * sinA + relCoord.y * cosA
+            ) + center + float2(swayX, swayY);
+
+            // 2. Binocular Diplopia (Double Vision) convergence offset
+            // Separation distance pulses and drifts over time (6 to 22 pixels)
+            float separation = 14.0 + 8.0 * sin(t * 0.85);
+            float2 eyeOffset = float2(separation, sin(t * 1.4) * 3.0);
+
+            // 3. Chromatic Aberration + Ciliary Accommodation Blur for both eye images
+            float distFromCenter = length(fragCoord - center) / max(w, h);
+            float ca = 1.0 + 0.012 * (1.0 + 0.5 * sin(t * 1.1)) * distFromCenter;
+
+            // Eye 1 sampling (with slight chromatic dispersion)
+            float2 p1 = rotatedCoord - eyeOffset * 0.5;
+            float2 p1_r = center + (p1 - center) * ca;
+            float2 p1_b = center + (p1 - center) / ca;
+
+            half4 eye1 = half4(
+                inputBuffer.eval(p1_r).r,
+                inputBuffer.eval(p1).g,
+                inputBuffer.eval(p1_b).b,
+                1.0
+            );
+            // Accommodation blur (multi-tap disk blur)
+            eye1 = eye1 * 0.36 +
+                   (inputBuffer.eval(p1 + float2(3.5, 0.0)) + inputBuffer.eval(p1 - float2(3.5, 0.0))) * 0.18 +
+                   (inputBuffer.eval(p1 + float2(0.0, 3.5)) + inputBuffer.eval(p1 - float2(0.0, 3.5))) * 0.14;
+
+            // Eye 2 sampling (secondary ghost image)
+            float2 p2 = rotatedCoord + eyeOffset * 0.5;
+            float2 p2_r = center + (p2 - center) * ca;
+            float2 p2_b = center + (p2 - center) / ca;
+
+            half4 eye2 = half4(
+                inputBuffer.eval(p2_r).r,
+                inputBuffer.eval(p2).g,
+                inputBuffer.eval(p2_b).b,
+                1.0
+            );
+            eye2 = eye2 * 0.36 +
+                   (inputBuffer.eval(p2 + float2(3.5, 0.0)) + inputBuffer.eval(p2 - float2(3.5, 0.0))) * 0.18 +
+                   (inputBuffer.eval(p2 + float2(0.0, 3.5)) + inputBuffer.eval(p2 - float2(0.0, 3.5))) * 0.14;
+
+            // Blend the two binocular ghost images
+            half4 blended = mix(eye1, eye2, 0.45);
+
+            // 4. Pulsing Tunnel Vision Vignette
+            float vignettePulse = 0.04 * sin(t * 2.2); // ~75 BPM pulse
+            float normDist = length((fragCoord - center) / center);
+            float vignette = smoothstep(1.25 + vignettePulse, 0.55 + vignettePulse, normDist);
+
+            return half4(blended.rgb * vignette, blended.a);
+        }
+
         half4 main(float2 fragCoord) {
             // Split comparison mode: keep left side as unedited human trichromatic feed
             if (isSplitMode > 0.5 && fragCoord.x < splitPos * screenWidth) {
@@ -103,25 +174,29 @@ object AnimalVisionShader {
             // 1. Animal Optical Acuity & Retinal Geometry Filtering
             half4 color;
             if (isBlurEnabled > 0.5) {
+                float d = max(1.0, density);
                 if (animalType < 0.5) {
                     // Dog (0): 20/75 isotropic blur
-                    color = sampleIsotropicBlur(fragCoord, 3.0);
+                    color = sampleIsotropicBlur(fragCoord, 3.0 * d);
                 } else if (animalType < 1.5) {
                     // Deer (1): 20/60 horizontal visual streak
-                    color = sampleDeerStreak(fragCoord);
+                    color = sampleDeerStreak(fragCoord, d);
                 } else if (animalType < 2.5) {
                     // Cat (2): 20/100 vertical stenopaeic blur
-                    color = sampleCatSlit(fragCoord);
+                    color = sampleCatSlit(fragCoord, d);
                 } else if (animalType < 3.5) {
                     // Bird (3): Bifoveal center-surround deep fovea magnification + wide periphery
                     color = sampleBifovealBird(fragCoord, screenWidth, screenHeight);
                 } else if (animalType < 4.5) {
                     // Bee (4): Compound ommatidia hexagonal pixelation
-                    float2 hexCoord = hexGridSample(fragCoord, 12.0);
+                    float2 hexCoord = hexGridSample(fragCoord, 12.0 * d);
                     color = inputBuffer.eval(hexCoord);
-                } else {
+                } else if (animalType < 5.5) {
                     // Snake (5): Pit viper blurred visual background
-                    color = sampleIsotropicBlur(fragCoord, 4.0);
+                    color = sampleIsotropicBlur(fragCoord, 4.0 * d);
+                } else {
+                    // Drunk Human (6): Diplopia, bobbing, accommodation blur, CA & vignette
+                    color = sampleDrunkVision(fragCoord, screenWidth, screenHeight, time);
                 }
             } else {
                 color = inputBuffer.eval(fragCoord);
@@ -145,10 +220,12 @@ object AnimalVisionShader {
 
             if (animalType < 0.5) {
                 // === DOG: Canine Deuteranopia (435nm S, 555nm M/L) ===
+                // Mathematically verified linear sRGB projection (Viénot et al. 1999)
+                // Both red and green stimulate 555nm M/L cones, producing natural yellow-brown hues
                 float3 lin_prime;
-                lin_prime.r = dot(float3(0.84095,  2.92281, -2.76374), lin_boosted);
-                lin_prime.g = dot(float3(0.03561,  0.13067,  0.84045), lin_boosted);
-                lin_prime.b = dot(float3(0.00579,  0.02723,  0.96602), lin_boosted);
+                lin_prime.r = dot(float3(0.625, 0.375, 0.000), lin_boosted);
+                lin_prime.g = dot(float3(0.700, 0.300, 0.000), lin_boosted);
+                lin_prime.b = dot(float3(0.000, 0.300, 0.700), lin_boosted);
                 lin_prime = clamp(lin_prime, 0.0, 1.0);
 
                 float3 lin_desat = mix(float3(luminance), lin_prime, desaturation);
@@ -209,7 +286,7 @@ object AnimalVisionShader {
                 bee_rgb *= red_cutoff;
                 final_lin = clamp(bee_rgb, 0.0, 1.0);
 
-            } else {
+            } else if (animalType < 5.5) {
                 // === SNAKE: Dichromatic Background + Pit Organ Thermal IR Overlay ===
                 float3 snake_vis;
                 snake_vis.r = 0.75 * lin_boosted.g + 0.20 * lin_boosted.r;
@@ -227,6 +304,12 @@ object AnimalVisionShader {
                     thermal_map = mix(float3(1.0, 0.45, 0.0), float3(1.0, 1.0, 0.85), (heat - 0.66) / 0.34);
                 }
                 final_lin = mix(snake_vis, thermal_map, 0.55);
+            } else {
+                // === DRUNK HUMAN: Warm Amber Flush + High-Luminance Light Bloom ===
+                float glare = smoothstep(0.65, 1.0, luminance) * 0.35;
+                float3 warm_tint = float3(1.08, 0.98, 0.90);
+                float3 flushed = clamp(lin_boosted * warm_tint + float3(glare * 0.4, glare * 0.3, glare * 0.1), 0.0, 1.0);
+                final_lin = flushed;
             }
 
             float3 srgb_prime = linearToSrgb(final_lin);
@@ -238,10 +321,12 @@ object AnimalVisionShader {
         return RuntimeShader(SHADER_SRC)
     }
 
-    fun applyProfile(shader: RuntimeShader, profile: AnimalVisionProfile) {
+    fun applyProfile(shader: RuntimeShader, profile: AnimalVisionProfile, density: Float = 1.0f) {
         shader.setFloatUniform("animalType", profile.shaderTypeIndex.toFloat())
         shader.setFloatUniform("tapetumBoost", profile.tapetumFactor)
         shader.setFloatUniform("uvGain", profile.uvSensitivityGain)
         shader.setFloatUniform("desaturation", profile.desaturationFactor)
+        shader.setFloatUniform("density", density)
     }
 }
+

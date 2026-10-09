@@ -1,25 +1,18 @@
 <resources>
     <string name="app_name">AnimalVision</string>
     <string name="subtitle">See the world through nature\'s eyes</string>
-    <string name="description">Transforms camera sensor data into anatomically and physically accurate spectral simulations of animal photoreceptors, lenses, and retinal optics.</string>
     <string name="start_emulation">START EMULATION</string>
     <string name="button_return">Return</string>
     <string name="visible_spectrum_rgb">Visible Spectrum (Human Trichromat)</string>
     <string name="visible_spectrum_animal">Animal Perceived Spectrum</string>
-    <string name="visible_spectrum_by">Visible Spectrum (B/Y)</string>
     <string name="human_trichromat">Human (Trichromat)</string>
-    <string name="dog_dichromat">Dog (Dichromat)</string>
-    <string name="deer_dichromat">Deer (Dichromat + UV Open)</string>
-    <string name="cat_dichromat">Cat (Dichromat + Scotopic)</string>
-    <string name="bird_tetrachromat">Bird (Tetrachromat + UV)</string>
-    <string name="bee_trichromat">Bee (UV-B-G + Ommatidia)</string>
-    <string name="snake_thermal">Pit Viper (Dichromat + Thermal IR)</string>
 
     <string name="lens">Optics</string>
     <string name="receptors">Receptors</string>
     <string name="split_mode">Split</string>
+    <string name="torch_on">Torch ON</string>
+    <string name="torch_off">Torch</string>
     <string name="human_label">Human</string>
-    <string name="dog_label">Dog</string>
     <string name="calibrating_vision">Calibrating Spectral Sensors&#8230;</string>
     <string name="eye_anatomy_comparison">Eye Anatomy &amp; Retinal Comparison</string>
     <string name="human">Human</string>
@@ -33,7 +26,6 @@
     <string name="spec_fov">Field of View</string>
     <string name="spec_tapetum">Low-Light Gain</string>
     <string name="spec_uv">UV Sensing</string>
-    <string name="spec_pupil">Pupil Shape</string>
 
     <!-- Animals -->
     <!-- Dog -->
@@ -85,4 +77,13 @@
     <string name="snake_fact_1">Thermal Pit Organs: Detects radiant infrared body heat at 8–12µm</string>
     <string name="snake_fact_2">Optic Tectum Fusion: Merges visual light and thermal heat maps</string>
     <string name="snake_fact_3">Dichromatic Background: Adapted for motion and nocturnal hunting</string>
+
+    <!-- Drunk Human -->
+    <string name="animal_drunk_human_name">Drunk Human</string>
+    <string name="animal_drunk_human_subtitle">Homo sapiens inebriatus</string>
+    <string name="animal_drunk_human_desc">Under the influence of alcohol, central nervous system depression impairs the oculomotor nerves, causing binocular diplopia (double vision) and ciliary muscle paresis (inability to focus on close objects). Positional alcohol nystagmus (PAN) induces rotational vestibular sway.</string>
+    <string name="drunk_fact_1">Diplopia: Extraocular muscle desynchronization splits vision into two drifting images</string>
+    <string name="drunk_fact_2">Accommodation Paralysis: Sluggish ciliary lens cannot focus on close objects</string>
+    <string name="drunk_fact_3">Positional Nystagmus: Inner ear endolymph density mismatch causes vestibular sway</string>
+    <string name="drunk_fact_4">Beer Goggles: Perceived contrast bloom and 10x subjective confidence multiplier</string>
 </resources>

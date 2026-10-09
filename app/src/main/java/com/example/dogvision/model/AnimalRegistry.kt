@@ -28,6 +28,7 @@ object AnimalRegistry {
         desaturationFactor = 0.60f,
         primaryColor = Color(0xFFFFD700),
         iconRes = R.drawable.ic_dog_cute,
+        emoji = "🐶",
         keyFacts = listOf(R.string.dog_fact_1, R.string.dog_fact_2, R.string.dog_fact_3)
     )
 
@@ -54,6 +55,7 @@ object AnimalRegistry {
         desaturationFactor = 0.55f,
         primaryColor = Color(0xFF00E5FF),
         iconRes = null,
+        emoji = "🦌",
         keyFacts = listOf(
             R.string.deer_fact_1,
             R.string.deer_fact_2,
@@ -86,6 +88,7 @@ object AnimalRegistry {
         desaturationFactor = 0.40f,
         primaryColor = Color(0xFF69F0AE),
         iconRes = null,
+        emoji = "🐱",
         keyFacts = listOf(R.string.cat_fact_1, R.string.cat_fact_2, R.string.cat_fact_3)
     )
 
@@ -120,6 +123,7 @@ object AnimalRegistry {
         desaturationFactor = 1.0f,
         primaryColor = Color(0xFFE040FB),
         iconRes = null,
+        emoji = "🦅",
         keyFacts = listOf(R.string.bird_fact_1, R.string.bird_fact_2, R.string.bird_fact_3)
     )
 
@@ -147,6 +151,7 @@ object AnimalRegistry {
         desaturationFactor = 0.9f,
         primaryColor = Color(0xFFFFAB00),
         iconRes = null,
+        emoji = "🐝",
         keyFacts = listOf(R.string.bee_fact_1, R.string.bee_fact_2, R.string.bee_fact_3)
     )
 
@@ -174,7 +179,41 @@ object AnimalRegistry {
         desaturationFactor = 0.5f,
         primaryColor = Color(0xFFFF3D00),
         iconRes = null,
+        emoji = "🐍",
         keyFacts = listOf(R.string.snake_fact_1, R.string.snake_fact_2, R.string.snake_fact_3)
+    )
+
+    val DRUNK_HUMAN = AnimalVisionProfile(
+        id = "drunk_human",
+        nameRes = R.string.animal_drunk_human_name,
+        subtitleRes = R.string.animal_drunk_human_subtitle,
+        descriptionRes = R.string.animal_drunk_human_desc,
+        scientificName = "Homo sapiens inebriatus",
+        visualAcuity = "20/??? (Double)",
+        fieldOfViewDeg = 120,
+        pupilType = PupilType.CIRCULAR,
+        hasTapetum = false,
+        tapetumBoostMultiplier = "Beer Goggles 10x",
+        hasUvVision = false,
+        cones = listOf(
+            ConeData(440f, 20f, Color(0xFF3F51B5), "S (440nm Blue)"),
+            ConeData(535f, 30f, Color(0xFF4CAF50), "M (535nm Green)"),
+            ConeData(565f, 35f, Color(0xFFF44336), "L (565nm Red)")
+        ),
+        spectrumBarColors = listOf(Color(0xFF3F51B5), Color(0xFF4CAF50), Color(0xFFFFEB3B), Color(0xFFF44336)),
+        shaderTypeIndex = 6,
+        tapetumFactor = 0.0f,
+        uvSensitivityGain = 0.0f,
+        desaturationFactor = 1.0f,
+        primaryColor = Color(0xFFFF7043),
+        iconRes = null,
+        emoji = "🥴",
+        keyFacts = listOf(
+            R.string.drunk_fact_1,
+            R.string.drunk_fact_2,
+            R.string.drunk_fact_3,
+            R.string.drunk_fact_4
+        )
     )
 
     val ALL_ANIMALS: List<AnimalVisionProfile> = listOf(
@@ -183,7 +222,8 @@ object AnimalRegistry {
         CAT,
         BIRD,
         BEE,
-        SNAKE
+        SNAKE,
+        DRUNK_HUMAN
     )
 
     fun getById(id: String): AnimalVisionProfile {

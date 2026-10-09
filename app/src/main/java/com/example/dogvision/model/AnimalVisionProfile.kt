@@ -40,5 +40,6 @@ data class AnimalVisionProfile(
     val desaturationFactor: Float,
     val primaryColor: Color = Color(0xFFFFD700),
     @param:DrawableRes val iconRes: Int? = null,
+    val emoji: String = "🐾",
     val keyFacts: List<Int> = emptyList()
 )

@@ -42,12 +42,21 @@ import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import com.example.dogvision.model.AnimalRegistry
 import com.example.dogvision.model.AnimalVisionProfile
+import androidx.activity.viewModels
 import com.example.dogvision.ui.AnimalSelector
+import com.example.dogvision.ui.AnimalVisionViewModel
 import com.example.dogvision.ui.CameraPreview
 import com.example.dogvision.ui.WavelengthComparison
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 
 @ExperimentalCamera2Interop
 class MainActivity : AppCompatActivity() {
+    private val viewModel: AnimalVisionViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -64,7 +73,7 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Black
                 ) {
-                    AnimalVisionApp()
+                    AnimalVisionApp(viewModel = viewModel)
                 }
             }
         }
@@ -78,56 +87,62 @@ class MainActivity : AppCompatActivity() {
 
 @ExperimentalCamera2Interop
 @Composable
-fun AnimalVisionApp() {
-    var showCamera by rememberSaveable { mutableStateOf(false) }
-    var selectedAnimalId by rememberSaveable { mutableStateOf(AnimalRegistry.DOG.id) }
-    var hasCameraPermission by remember { mutableStateOf(false) }
+fun AnimalVisionApp(viewModel: AnimalVisionViewModel) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
 
-    val selectedAnimal = remember(selectedAnimalId) {
-        AnimalRegistry.getById(selectedAnimalId)
-    }
+    val selectedAnimal = uiState.selectedAnimal
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        hasCameraPermission = isGranted
-        if (isGranted) showCamera = true
+        viewModel.setCameraPermission(isGranted)
+        if (isGranted) viewModel.setCameraActive(true)
     }
 
     LaunchedEffect(Unit) {
-        hasCameraPermission = ContextCompat.checkSelfPermission(
+        val granted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
+        viewModel.setCameraPermission(granted)
     }
 
     val startAction = {
         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-        if (!showCamera) {
-            if (hasCameraPermission) showCamera = true
+        if (!uiState.isCameraActive) {
+            if (uiState.hasCameraPermission) viewModel.setCameraActive(true)
             else launcher.launch(Manifest.permission.CAMERA)
         } else {
-            showCamera = false
+            viewModel.setCameraActive(false)
         }
     }
 
     Crossfade(
-        targetState = showCamera && hasCameraPermission,
+        targetState = uiState.isCameraActive && uiState.hasCameraPermission,
         label = "ScreenTransition",
         modifier = Modifier.fillMaxSize()
     ) { isCameraActive ->
         if (isCameraActive) {
-            var isColorFilterEnabled by rememberSaveable { mutableStateOf(true) }
-            var isBlurEnabled by rememberSaveable { mutableStateOf(true) }
-            var isSplitEnabled by rememberSaveable { mutableStateOf(false) }
-            var splitPosition by rememberSaveable { mutableFloatStateOf(0.5f) }
-
+            val lifecycleOwner = LocalLifecycleOwner.current
             val soundManager = remember { SoundManager.getInstance(context) }
             val playAnimalAudio = {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 soundManager.playAnimalSound(selectedAnimal.id)
+            }
+
+            // Periodic spontaneous burp sound for Drunk Human easter egg (pauses when backgrounded/screen locked)
+            LaunchedEffect(selectedAnimal.id, lifecycleOwner) {
+                if (selectedAnimal.id == "drunk_human") {
+                    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                        while (true) {
+                            val delayMillis = 18_000L + (Math.random() * 12_000L).toLong()
+                            delay(delayMillis)
+                            soundManager.playBurpSound()
+                        }
+                    }
+                }
             }
 
             Box(
@@ -141,11 +156,13 @@ fun AnimalVisionApp() {
                 ) {
                     CameraPreview(
                         animal = selectedAnimal,
-                        isColorFilterEnabled = isColorFilterEnabled,
-                        isBlurEnabled = isBlurEnabled,
-                        isSplitEnabled = isSplitEnabled,
-                        splitPosition = splitPosition,
-                        onSplitPositionChange = { splitPosition = it },
+                        isColorFilterEnabled = uiState.isColorFilterEnabled,
+                        isBlurEnabled = uiState.isBlurEnabled,
+                        isSplitEnabled = uiState.isSplitEnabled,
+                        splitPosition = uiState.splitPosition,
+                        onSplitPositionChange = { viewModel.updateSplitPosition(it) },
+                        isTorchEnabled = uiState.isTorchEnabled,
+                        onTorchAvailable = { viewModel.setTorchAvailable(it) },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -159,75 +176,82 @@ fun AnimalVisionApp() {
                 ) {
                     AnimalSelector(
                         selectedAnimal = selectedAnimal,
-                        onAnimalSelected = { selectedAnimalId = it.id },
+                        onAnimalSelected = { viewModel.selectAnimal(it) },
                         compact = true
                     )
                 }
 
-                // Floating glassmorphic controls column at bottom center
-                Column(
+                // Floating glassmorphic controls row at bottom center
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 36.dp)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 24.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClick = {}
                         ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        EmulationToggleButton(
-                            label = stringResource(R.string.lens),
-                            isActive = isBlurEnabled,
-                            activeColor = selectedAnimal.primaryColor,
-                            onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                isBlurEnabled = !isBlurEnabled
-                            }
-                        )
-                        EmulationToggleButton(
-                            label = stringResource(R.string.receptors),
-                            isActive = isColorFilterEnabled,
-                            activeColor = selectedAnimal.primaryColor,
-                            onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                isColorFilterEnabled = !isColorFilterEnabled
-                            }
-                        )
-                        EmulationToggleButton(
-                            label = stringResource(R.string.split_mode),
-                            isActive = isSplitEnabled,
-                            activeColor = selectedAnimal.primaryColor,
-                            onClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                isSplitEnabled = !isSplitEnabled
-                            }
-                        )
-                    }
-
-                    // Return Button
+                    // Return / Back Button
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.15f))
+                            .background(Color.Black.copy(alpha = 0.55f))
                             .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
                             .clickable {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showCamera = false
+                                viewModel.setCameraActive(false)
                             }
-                            .padding(horizontal = 32.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.button_return).uppercase(),
+                            text = stringResource(R.string.button_return),
                             color = Color.White,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    EmulationToggleButton(
+                        label = stringResource(R.string.lens),
+                        isActive = uiState.isBlurEnabled,
+                        activeColor = selectedAnimal.primaryColor,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleBlur()
+                        }
+                    )
+                    EmulationToggleButton(
+                        label = stringResource(R.string.receptors),
+                        isActive = uiState.isColorFilterEnabled,
+                        activeColor = selectedAnimal.primaryColor,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleColorFilter()
+                        }
+                    )
+                    EmulationToggleButton(
+                        label = stringResource(R.string.split_mode),
+                        isActive = uiState.isSplitEnabled,
+                        activeColor = selectedAnimal.primaryColor,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleSplitMode()
+                        }
+                    )
+                    if (uiState.isTorchAvailable) {
+                        EmulationToggleButton(
+                            label = stringResource(if (uiState.isTorchEnabled) R.string.torch_on else R.string.torch_off),
+                            isActive = uiState.isTorchEnabled,
+                            activeColor = Color(0xFFFFEB3B),
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.toggleTorch()
+                            }
                         )
                     }
                 }
@@ -235,7 +259,7 @@ fun AnimalVisionApp() {
         } else {
             InfoView(
                 selectedAnimal = selectedAnimal,
-                onAnimalSelected = { selectedAnimalId = it.id },
+                onAnimalSelected = { viewModel.selectAnimal(it) },
                 onStartClicked = { startAction() }
             )
         }
@@ -245,8 +269,8 @@ fun AnimalVisionApp() {
 // Backward compatibility alias for DogVisionApp
 @ExperimentalCamera2Interop
 @Composable
-fun DogVisionApp() {
-    AnimalVisionApp()
+fun DogVisionApp(viewModel: AnimalVisionViewModel = remember { AnimalVisionViewModel() }) {
+    AnimalVisionApp(viewModel = viewModel)
 }
 
 @Composable

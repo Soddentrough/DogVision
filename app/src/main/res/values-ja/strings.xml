@@ -1,25 +1,18 @@
 <resources>
     <string name="app_name">AnimalVision</string>
     <string name="subtitle">動物たちが見ている世界をのぞいてみよう</string>
-    <string name="description">カメラのセンサーデータを、動物の光受容体・レンズ・網膜構造の解剖学的・物理的に正確な分光シミュレーションに変換します。</string>
     <string name="start_emulation">エミュレーション開始</string>
     <string name="button_return">戻る</string>
     <string name="visible_spectrum_rgb">可視スペクトル (人間の3色型色覚)</string>
     <string name="visible_spectrum_animal">動物の知覚スペクトル</string>
-    <string name="visible_spectrum_by">可視スペクトル (青/黄)</string>
     <string name="human_trichromat">人間 (3色型色覚)</string>
-    <string name="dog_dichromat">犬 (2色型色覚)</string>
-    <string name="deer_dichromat">鹿 (2色型色覚 + UV透過)</string>
-    <string name="cat_dichromat">猫 (2色型色覚 + 暗所視)</string>
-    <string name="bird_tetrachromat">鳥類/猛禽 (4色型色覚 + UV)</string>
-    <string name="bee_trichromat">ミツバチ (UV-青-緑 + 複眼)</string>
-    <string name="snake_thermal">マムシ/ヘビ (2色型 + 熱赤外線)</string>
 
     <string name="lens">光学レンズ</string>
     <string name="receptors">受容体</string>
     <string name="split_mode">分割比較</string>
+    <string name="torch_on">ライト ON</string>
+    <string name="torch_off">ライト</string>
     <string name="human_label">人間</string>
-    <string name="dog_label">犬</string>
     <string name="calibrating_vision">分光センサーキャリブレーション中&#8230;</string>
     <string name="eye_anatomy_comparison">眼の解剖学的・網膜構造の比較</string>
     <string name="human">人間</string>
@@ -33,7 +26,6 @@
     <string name="spec_fov">視野角</string>
     <string name="spec_tapetum">夜間感度倍率</string>
     <string name="spec_uv">UV (紫外線) 知覚</string>
-    <string name="spec_pupil">瞳孔形状</string>
 
     <!-- Animals -->
     <!-- Dog -->
@@ -85,4 +77,13 @@
     <string name="snake_fact_1">ピット器官 (赤外線受容体): 8〜12µmの微小な熱放射を感知</string>
     <string name="snake_fact_2">視蓋での神経融合: 可視光画像と獲物の体温ヒートマップを統合</string>
     <string name="snake_fact_3">2色型色覚: 夜間の動体検知に特化</string>
+
+    <!-- Drunk Human -->
+    <string name="animal_drunk_human_name">ほろ酔い人間</string>
+    <string name="animal_drunk_human_subtitle">ホモ・サピエンス・イネブリアトゥス</string>
+    <string name="animal_drunk_human_desc">アルコールの影響により中枢神経が抑制され、動眼神経の協調不全による複視（二重に見える）や毛様体筋麻痺による焦点調節障害（手元や近くにピントが合わない）が発生します。さらに内耳の比重変化による位置性眼振（PAN）が独特の視界の揺らぎを引き起こします。</string>
+    <string name="drunk_fact_1">複視 (二重に見える): 外眼筋の協調不全により像が左右に分裂</string>
+    <string name="drunk_fact_2">調節麻痺: 毛様体筋が弛緩し手元のスマホや物体にピントが合わない</string>
+    <string name="drunk_fact_3">位置性眼振: 内耳リンパ液の比重変化による回転性の視界の揺らぎ</string>
+    <string name="drunk_fact_4">ビール・ゴーグル効果: 光源の激しいグレアと主観的自信の10倍増幅</string>
 </resources>
